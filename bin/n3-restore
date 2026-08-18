@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 || ! -f "$1" ]]; then
+  echo "Usage: bin/n3-restore BACKUP.tar.gz" >&2
+  exit 1
+fi
+
+compose=(docker compose)
+if [[ -n "${N3_ENV_FILE:-}" ]]; then compose+=(--env-file "$N3_ENV_FILE"); fi
+"${compose[@]}" cp "$1" n3:/tmp/n3-restore.tar.gz
+"${compose[@]}" exec -T n3 php /var/www/html/scripts/restore.php /tmp/n3-restore.tar.gz
+"${compose[@]}" exec -T n3 rm -f /tmp/n3-restore.tar.gz
+"${compose[@]}" restart n3
+echo "Restore complete. n3 has been restarted."

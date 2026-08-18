@@ -1,0 +1,6 @@
+{
+  "name": "Disabled request probe",
+  "version": "1.0.0",
+  "enabled": false,
+  "js": ["disabled.js"]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Beta disabled",
+  "version": "1.0.0",
+  "enabled": false,
+  "contributions": ["profile_cards", "page_information"],
+  "css": ["plugin.css"],
+  "dashboard": [
+    {
+      "title": "Disabled card",
+      "body": "This card must not be registered."
+    }
+  ]
+}

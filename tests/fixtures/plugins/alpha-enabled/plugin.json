@@ -1,0 +1,15 @@
+{
+  "name": "Alpha enabled",
+  "version": "1.2.3",
+  "enabled": true,
+  "contributions": ["profile_tools", "profile_cards", "page_information"],
+  "css": ["plugin.css", "missing.css", "notes.txt", "wrong-type.js"],
+  "js": ["plugin.js", "wrong-type.css"],
+  "dashboard": [
+    {
+      "title": "Manifest card",
+      "body": "Registered from plugin.json.",
+      "url": "/api/plugins/alpha-enabled/status"
+    }
+  ]
+}

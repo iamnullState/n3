@@ -1,0 +1,14 @@
+{
+  "name": "Request lifecycle probe",
+  "version": "1.0.0",
+  "enabled": true,
+  "contributions": ["profile_cards", "page_information"],
+  "css": ["probe.css", "wrong-type.js"],
+  "js": ["probe.js", "wrong-type.css"],
+  "dashboard": [
+    {
+      "title": "Request probe",
+      "body": "Loaded only for an authenticated private request."
+    }
+  ]
+}

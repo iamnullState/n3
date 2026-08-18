@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+output_dir="${1:-./backups}"
+mkdir -p "$output_dir"
+compose=(docker compose)
+if [[ -n "${N3_ENV_FILE:-}" ]]; then compose+=(--env-file "$N3_ENV_FILE"); fi
+archive="$("${compose[@]}" exec -T n3 php /var/www/html/scripts/backup.php /var/www/data/backups | tail -n 1)"
+"${compose[@]}" cp "n3:${archive}" "$output_dir/"
+echo "Backup saved to ${output_dir}/$(basename "$archive")"

@@ -1,0 +1,13 @@
+{
+  "name": "Theta failing",
+  "version": "1.0.0",
+  "enabled": true,
+  "contributions": ["profile_cards", "page_information"],
+  "js": ["failed.js"],
+  "dashboard": [
+    {
+      "title": "Manifest contribution before failure",
+      "body": "Atomic registration must discard this contribution."
+    }
+  ]
+}

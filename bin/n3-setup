@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$project_dir"
+
+echo "n3 first-time setup"
+echo "This configures the Docker listener. Branding and the administrator account are completed in the browser."
+echo
+
+if [[ -f .env ]]; then
+  read -r -p ".env already exists. Replace it? [y/N] " replace_env
+  [[ ${replace_env,,} == y || ${replace_env,,} == yes ]] || { echo "Setup cancelled; existing .env was not changed."; exit 0; }
+fi
+
+detected_tailscale=""
+if command -v tailscale >/dev/null 2>&1; then
+  detected_tailscale=$(tailscale ip -4 2>/dev/null | head -n 1 || true)
+fi
+
+read -r -p "Tailscale IP or bind IP [${detected_tailscale:-127.0.0.1}]: " bind_ip
+bind_ip=${bind_ip:-${detected_tailscale:-127.0.0.1}}
+if [[ ! $bind_ip =~ ^[0-9a-fA-F:.]+$ ]]; then echo "That does not look like an IP address." >&2; exit 1; fi
+
+read -r -p "Port [8786]: " app_port
+app_port=${app_port:-8786}
+if [[ ! $app_port =~ ^[0-9]+$ ]] || (( app_port < 1 || app_port > 65535 )); then echo "Port must be between 1 and 65535." >&2; exit 1; fi
+
+read -r -p "Brand name [n3]: " brand_name
+brand_name=${brand_name:-n3}
+[[ $brand_name != *$'\n'* && $brand_name != *$'\r'* ]] || { echo "Brand name cannot contain a line break." >&2; exit 1; }
+
+default_url="http://${bind_ip}:${app_port}"
+[[ $bind_ip == "127.0.0.1" ]] && default_url="http://127.0.0.1:${app_port}"
+read -r -p "Public application URL [${default_url}]: " app_url
+app_url=${app_url:-$default_url}
+if [[ ! $app_url =~ ^https?:// ]]; then echo "Application URL must begin with http:// or https://." >&2; exit 1; fi
+
+env_tmp=$(mktemp "$project_dir/.env.n3-setup.XXXXXX")
+trap 'rm -f "$env_tmp"' EXIT
+escaped_brand=${brand_name//\\/\\\\}
+escaped_brand=${escaped_brand//\"/\\\"}
+escaped_brand=${escaped_brand//\$/\$\$}
+{
+  printf 'APP_NAME="%s"\n' "$escaped_brand"
+  printf 'APP_TIMEZONE=%s\n' "${APP_TIMEZONE:-UTC}"
+  printf 'APP_URL=%s\n' "$app_url"
+  printf 'APP_BIND_IP=%s\n' "$bind_ip"
+  printf 'APP_PORT=%s\n' "$app_port"
+} > "$env_tmp"
+chmod 600 "$env_tmp"
+mv "$env_tmp" .env
+trap - EXIT
+
+echo
+echo "Building and starting n3…"
+docker compose up -d --build
+echo
+echo "Open ${app_url}/setup to upload your icon/banner and create the administrator username and password."

@@ -1,0 +1,22 @@
+{
+  "name": "Reference plugin",
+  "version": "1.0.0",
+  "enabled": false,
+  "contributions": ["profile_tools", "profile_cards", "page_information"],
+  "css": ["reference.css"],
+  "js": ["reference.js"],
+  "public": {
+    "bootstrap": "public.php",
+    "prefixes": ["/reference-plugin-public"]
+  },
+  "dashboard": [
+    {
+      "title": "Reference plugin",
+      "body": "A non-production example of the supported n3 plugin contract.",
+      "url": "/api/plugins/reference-plugin/items/example?view=dashboard"
+    }
+  ],
+  "navigation": [
+    {"label": "Reference", "url": "/api/plugins/reference-plugin/items/navigation", "icon": "◇"}
+  ]
+}

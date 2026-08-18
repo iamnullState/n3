@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install test dependencies
+        run: npm ci
+
+      - name: Static checks
+        run: |
+          find public src scripts tests database examples -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+          php tests/autoload_smoke.php
+          php tests/http_smoke.php
+          php tests/proxy_config.php
+          php tests/auth_view.php
+          php tests/account_services.php
+          php tests/extensions.php
+          php tests/profile_migration.php
+          php tests/profile_upgrade_compatibility.php
+          php tests/profile_services.php
+          php tests/authorship_services.php
+          php tests/profile_avatar_service.php
+          php tests/profile_settings_service.php
+          php tests/profile_views.php
+          php tests/page_information_service.php
+          php tests/page_projection_service.php
+          php tests/private_read_repositories.php
+          php tests/page_tree_service.php
+          php tests/html_sanitizer.php
+          php tests/revision_repository.php
+          php tests/revision_restore_service.php
+          php tests/trash_repository.php
+          php tests/plugin_lifecycle.php
+          php tests/plugin_contribution_service.php
+          php tests/plugin_request_lifecycle.php
+          php tests/reference_plugin.php
+          php tests/system_diagnostics.php
+          php tests/export_formats.php
+          php tests/persistence_mutations.php
+          php tests/publishing_service.php
+          php tests/public_read_side.php
+          php tests/page_views.php
+          bash -n bin/n3-backup bin/n3-restore scripts/backup-loop.sh tests/host_backup_restore.sh
+          node --check public/assets/app.js
+          node --check public/assets/public.js
+          node --check examples/plugins/reference-plugin/reference.js
+          docker compose config --quiet
+          git diff --check
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+
+      - name: Build application image
+        run: |
+          docker compose build
+          docker tag "$(docker compose images -q n3)" n3-ci:latest
+
+      - name: Scan image for critical vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: n3-ci:latest
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: API and security smoke test
+        run: |
+          docker compose up -d
+          docker compose exec -T n3 php /var/www/html/tests/auth_smoke.php
+          docker compose exec -T n3 php /var/www/html/tests/backup_roundtrip.php
+
+      - name: Host backup and restore workflow
+        run: tests/host_backup_restore.sh
+
+      - name: Reset application data for browser tests
+        run: |
+          docker compose down -v
+          docker compose up -d
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser workflow tests
+        run: npm run test:e2e
+
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+
+      - name: Container logs
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v

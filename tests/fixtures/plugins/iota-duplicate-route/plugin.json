@@ -1,0 +1,11 @@
+{
+  "name": "Iota duplicate route",
+  "version": "1.0.0",
+  "enabled": true,
+  "dashboard": [
+    {
+      "title": "Duplicate route fixture",
+      "body": "This complete registration must be rejected."
+    }
+  ]
+}

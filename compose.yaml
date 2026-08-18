@@ -1,0 +1,54 @@
+services:
+  n3:
+    build: .
+    ports:
+      - "${APP_BIND_IP:-127.0.0.1}:${APP_PORT:-8786}:80"
+    environment:
+      APP_NAME: ${APP_NAME:-n3}
+      APP_TIMEZONE: ${APP_TIMEZONE:-UTC}
+      APP_URL: ${APP_URL:-http://localhost:8786}
+      DATA_DIR: /var/www/data
+      BACKUP_DIR: /var/www/backups
+      TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:-}
+      N3_PLUGIN_DIR: /var/www/data/plugins
+    volumes:
+      - n3_data:/var/www/data
+      - ${BACKUP_HOST_DIR:-./backups}:/var/www/backups:ro
+      - ./plugins:/var/www/html/plugins:ro
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1/api/health') === false ? 1 : 0);"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  n3-backup:
+    profiles: ["backups"]
+    build: .
+    environment:
+      APP_NAME: ${APP_NAME:-n3}
+      DATA_DIR: /var/www/data
+      BACKUP_DIR: /var/www/data/backups
+      BACKUP_RETENTION: ${BACKUP_RETENTION:-10}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+    volumes:
+      - n3_data:/var/www/data
+      - ${BACKUP_HOST_DIR:-./backups}:/var/www/data/backups
+    command: ["sh", "/var/www/html/scripts/backup-loop.sh"]
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      n3:
+        condition: service_healthy
+
+volumes:
+  n3_data:

@@ -1,0 +1,3 @@
+.dashboard-card[href^="/api/plugins/reference-plugin/"] {
+  border-color: var(--accent-strong);
+}

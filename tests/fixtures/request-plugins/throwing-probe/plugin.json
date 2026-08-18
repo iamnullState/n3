@@ -1,0 +1,6 @@
+{
+  "name": "Throwing request probe",
+  "version": "1.0.0",
+  "enabled": true,
+  "js": ["failed.js"]
+}

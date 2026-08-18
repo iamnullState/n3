@@ -1,0 +1,6 @@
+{
+  "name": "Zeta healthy",
+  "version": "2.0.0",
+  "enabled": true,
+  "contributions": ["profile_cards"]
+}

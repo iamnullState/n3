@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>n3</title>
+  <meta name="description" content="A quiet, self-hosted personal wiki.">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" id="sidebar" aria-label="Workspace navigation">
+      <div class="workspace-switcher">
+        <button class="workspace-button" id="workspaceButton" type="button">
+          <span class="workspace-mark" id="workspaceMark"><img class="hidden" id="workspaceIcon" alt=""><span>n3</span></span>
+          <span class="workspace-name" id="appName"></span>
+          <svg aria-hidden="true"><use href="#chevrons"></use></svg>
+        </button>
+        <button class="icon-button sidebar-collapse" id="sidebarCollapse" type="button" aria-label="Collapse workspace navigation" aria-controls="sidebar" aria-expanded="true"><svg><use href="#chevron-right"></use></svg></button>
+        <button class="icon-button sidebar-close" id="sidebarClose" type="button" aria-label="Close sidebar"><svg><use href="#x"></use></svg></button>
+      </div>
+
+      <nav class="primary-nav" aria-label="Workspace">
+        <button class="nav-item" id="searchButton" type="button"><svg><use href="#search"></use></svg><span>Search</span><kbd>⌘ K</kbd></button>
+        <button class="nav-item" id="homeButton" type="button"><svg><use href="#home"></use></svg><span>Home</span></button>
+        <div id="pluginNavigation" class="plugin-navigation"></div>
+        <button class="nav-item" id="newSpaceButton" type="button"><svg><use href="#plus"></use></svg><span>New space</span></button>
+      </nav>
+
+      <section class="sidebar-section" id="favoritesSection">
+        <div class="section-label"><span>Favorites</span></div>
+        <div id="favoritesList" class="shortcut-list"></div>
+      </section>
+
+      <section class="sidebar-section recent-section" id="recentSection">
+        <div class="section-label"><span>Recently viewed</span></div>
+        <div id="recentList" class="shortcut-list"></div>
+      </section>
+
+      <section class="space-section">
+        <div class="space-heading">
+          <button class="space-title" id="spaceMenuButton" type="button" aria-expanded="true" aria-controls="pageTree">
+            <span class="space-dot" id="spaceDot"></span>
+            <span id="spaceName">Personal Wiki</span>
+            <svg><use href="#chevron-down"></use></svg>
+          </button>
+          <div class="space-actions">
+            <button class="mini-button" id="spaceSettings" type="button" aria-label="Space settings"><svg><use href="#more"></use></svg></button>
+            <button class="mini-button" id="newRootFolder" type="button" aria-label="New folder"><svg><use href="#folder"></use></svg></button>
+            <button class="mini-button" id="newRootPage" type="button" aria-label="New page"><svg><use href="#file-plus"></use></svg></button>
+          </div>
+        </div>
+        <div class="page-tree" id="pageTree"></div>
+      </section>
+
+      <div class="sidebar-footer">
+        <button class="nav-item" id="themeButton" type="button"><svg><use href="#moon"></use></svg><span>Appearance</span><span class="theme-value" id="themeValue">System</span></button>
+        <button class="nav-item hidden" id="appearanceAdminButton" type="button"><svg><use href="#palette"></use></svg><span>Brand &amp; theme</span></button>
+        <button class="nav-item" id="trashButton" type="button"><svg><use href="#trash"></use></svg><span>Trash</span></button>
+        <button class="nav-item hidden" id="pluginAdminButton" type="button"><svg><use href="#plugin"></use></svg><span>Plugin management</span></button>
+        <button class="nav-item hidden" id="diagnosticsButton" type="button"><svg><use href="#diagnostics"></use></svg><span>System diagnostics</span></button>
+        <button class="nav-item" id="accountButton" type="button"><svg><use href="#edit"></use></svg><span>Profile &amp; account</span></button>
+        <button class="nav-item" id="collaborationButton" type="button"><svg><use href="#users"></use></svg><span>Collaboration</span></button>
+        <button class="nav-item" id="logoutButton" type="button"><svg><use href="#logout"></use></svg><span>Sign out</span></button>
+        <div class="storage-note"><span class="status-dot"></span><span>Saved locally</span></div>
+      </div>
+    </aside>
+
+    <div class="sidebar-resizer" id="sidebarResizeHandle" role="separator" aria-label="Resize workspace navigation" aria-controls="sidebar" aria-orientation="vertical" aria-valuemin="224" aria-valuemax="420" aria-valuenow="286" tabindex="0"></div>
+
+    <button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Close sidebar" tabindex="-1"></button>
+
+    <main class="main" id="main" aria-busy="true">
+      <div class="connection-banner hidden" id="connectionBanner" role="status"><span><strong>Connection unavailable.</strong> Edits stay in this browser and will retry when n3 is reachable.</span><button class="secondary-button" id="connectionRetry" type="button">Retry now</button></div>
+      <section class="app-state" id="appState" aria-live="polite">
+        <div class="app-state-card"><span class="state-spinner" id="appStateSpinner" aria-hidden="true"></span><span class="eyebrow">YOUR WORKSPACE</span><h1 id="appStateTitle">Loading n3…</h1><p id="appStateMessage">Opening your spaces and pages.</p><button class="primary-button hidden" id="appStateRetry" type="button">Try again</button></div>
+      </section>
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-button menu-button" id="menuButton" type="button" aria-label="Open sidebar" aria-controls="sidebar" aria-expanded="false"><svg><use href="#menu"></use></svg></button>
+          <div class="breadcrumbs" id="breadcrumbs"></div>
+        </div>
+        <div class="topbar-actions" id="pageActions">
+          <div class="mode-toggle" role="group" aria-label="Page mode">
+            <button class="mode-button active" data-mode="edit" type="button" aria-pressed="true">Edit</button>
+            <button class="mode-button" data-mode="read" type="button" aria-pressed="false">Read</button>
+          </div>
+          <button class="icon-button" id="favoriteButton" type="button" aria-label="Add favorite" aria-pressed="false"><svg><use href="#star"></use></svg></button>
+          <button class="text-button" id="publishButton" type="button" aria-label="Publish page" aria-pressed="false"><span>Private</span></button>
+          <button class="text-button" id="collaborateButton" type="button"><svg><use href="#users"></use></svg><span>Share</span></button>
+          <button class="text-button" id="shareButton" type="button"><svg><use href="#export"></use></svg><span>Export</span></button>
+          <button class="icon-button" id="tocButton" type="button" aria-label="Table of contents" aria-controls="tocPanel" aria-expanded="false"><svg><use href="#list"></use></svg></button>
+          <button class="icon-button" id="moreButton" type="button" aria-label="More page actions" aria-controls="moreMenu" aria-expanded="false"><svg><use href="#more"></use></svg></button>
+        </div>
+      </header>
+
+      <div class="formatbar" id="formatbar" role="toolbar" aria-label="Formatting toolbar">
+        <select id="blockType" aria-label="Text style">
+          <option value="p">Text</option>
+          <option value="h1">Heading 1</option>
+          <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
+          <option value="blockquote">Quote</option>
+          <option value="pre">Code block</option>
+        </select>
+        <span class="toolbar-divider"></span>
+        <button type="button" data-command="bold" aria-label="Bold"><strong>B</strong></button>
+        <button type="button" data-command="italic" aria-label="Italic"><em>I</em></button>
+        <button type="button" data-command="underline" aria-label="Underline"><u>U</u></button>
+        <button type="button" data-command="strikeThrough" aria-label="Strikethrough"><s>S</s></button>
+        <button type="button" data-action="code" aria-label="Inline code"><span class="code-symbol">&lt;/&gt;</span></button>
+        <span class="toolbar-divider"></span>
+        <button type="button" data-command="insertUnorderedList" aria-label="Bullet list"><svg><use href="#list-ul"></use></svg></button>
+        <button type="button" data-command="insertOrderedList" aria-label="Numbered list"><svg><use href="#list-ol"></use></svg></button>
+        <button type="button" data-action="internal-link" aria-label="Link to n3 page" title="Link to n3 page"><svg><use href="#file-link"></use></svg></button>
+        <button type="button" data-action="link" aria-label="External link" title="External link"><svg><use href="#link"></use></svg></button>
+        <button type="button" data-action="callout" aria-label="Callout"><svg><use href="#sparkles"></use></svg></button>
+        <button type="button" data-action="table" aria-label="Table"><svg><use href="#table"></use></svg></button>
+        <button type="button" data-action="divider" aria-label="Horizontal divider" title="Insert horizontal divider">―</button>
+        <label class="toolbar-color" title="Text color"><span class="visually-hidden">Text color</span><input id="textColor" type="color" value="#0d1b2a" aria-label="Text color"></label>
+        <button type="button" data-action="media" aria-label="Upload photo or MP4" title="Upload photo or MP4 (50 MB max)"><svg><use href="#image"></use></svg></button>
+        <span class="toolbar-divider"></span>
+        <button type="button" data-action="media-left" aria-label="Float media left" title="Float selected media left">⇤</button>
+        <button type="button" data-action="media-center" aria-label="Center media" title="Center selected media">↔</button>
+        <button type="button" data-action="media-right" aria-label="Place media in side column" title="Place selected media in the side column">⇥</button>
+        <select id="mediaSize" aria-label="Selected image size" title="Resize selected image"><option value="">Image size</option><option value="25">25%</option><option value="50">50%</option><option value="75">75%</option><option value="100">100%</option></select>
+        <button type="button" data-command="removeFormat" aria-label="Clear formatting"><svg><use href="#clear"></use></svg></button>
+      </div>
+      <input id="mediaInput" class="hidden" type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif,image/bmp,video/mp4">
+
+      <section class="document hidden" id="documentView">
+        <div class="feature-image" id="featureImage" aria-hidden="true"></div>
+        <div class="document-meta">
+          <div class="feature-image-controls hidden" id="featureImageControls">
+            <button class="secondary-button" id="featureImageAdd" type="button"><svg><use href="#image"></use></svg><span id="featureImageAddLabel">Add feature image</span></button>
+            <label class="feature-image-opacity hidden" id="featureImageOpacityField"><span>Fade</span><select id="featureImageOpacity" aria-label="Feature image opacity"><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option></select></label>
+            <button class="text-button hidden" id="featureImageRemove" type="button">Remove</button>
+          </div>
+          <input id="featureImageInput" class="hidden" type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif,image/bmp">
+          <div class="page-icon" id="pageIcon" aria-hidden="true">✦</div>
+          <input class="page-title" id="pageTitle" value="" placeholder="Untitled" maxlength="160" aria-label="Page title">
+          <div class="byline" id="byline"></div>
+          <label class="tag-editor"><span>Tags</span><input id="pageTags" placeholder="notes, reference, ideas" maxlength="500"></label>
+        </div>
+        <article class="editor prose" id="editor" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="Page content" data-placeholder="Start writing, or paste something wonderful…"></article>
+        <section class="page-discovery" id="pageDiscovery">
+          <div class="reference-panel">
+            <div class="discovery-heading"><div><span class="eyebrow">SOURCES</span><h2>References</h2></div><button class="secondary-button" id="addReferenceButton" type="button" aria-controls="referenceForm" aria-expanded="false">Add reference</button></div>
+            <ol class="reference-list" id="referenceList"></ol>
+            <form class="reference-form hidden" id="referenceForm">
+              <label>Label<input name="label" maxlength="160" required placeholder="Source title"></label>
+              <label>URL<input name="url" maxlength="2000" required placeholder="https://… or /page/page-slug"></label>
+              <div><button class="secondary-button" id="cancelReferenceButton" type="button">Cancel</button><button class="primary-button" type="submit">Add</button></div>
+            </form>
+          </div>
+          <div class="similar-panel">
+            <div class="discovery-heading"><div><span class="eyebrow">BY TAG</span><h2>Similar pages</h2></div></div>
+            <ul class="similar-list" id="similarList"></ul>
+          </div>
+        </section>
+        <section class="page-information" id="pageInformation" aria-labelledby="pageInformationHeading">
+          <div class="page-information-heading"><span class="eyebrow">PAGE INFORMATION</span><h2 id="pageInformationHeading">Page information</h2></div>
+          <div class="page-information-grid">
+            <div class="page-info-author-field"><span>Author</span><div id="pageInformationAuthor"></div></div>
+            <dl>
+              <div><dt>Words</dt><dd id="pageInformationWords">0</dd></div>
+              <div><dt>Created</dt><dd id="pageInformationCreated">Unavailable</dd></div>
+              <div class="hidden" id="pageInformationPublishedField"><dt>First published</dt><dd id="pageInformationPublished">Unavailable</dd></div>
+              <div><dt>Updated</dt><dd id="pageInformationUpdated">Unavailable</dd></div>
+              <template id="pageInformationPluginRows"></template>
+            </dl>
+          </div>
+        </section>
+        <div class="save-conflict hidden" id="saveConflict" role="alert"><div><strong>A newer version is already on the server.</strong><span>Your local draft is safe in this browser. Reload to compare it before saving again.</span></div><button class="secondary-button" id="saveConflictReload" type="button">Reload and compare</button></div>
+        <footer class="document-footer">
+          <div class="save-state" id="saveState" role="status" aria-live="polite"><span class="status-dot"></span><span>Saved</span></div>
+          <span id="wordCount">0 words</span>
+        </footer>
+      </section>
+
+      <section class="home-view hidden" id="homeView">
+        <div class="home-hero"><img class="brand-banner hidden" id="brandBanner" alt=""><span class="eyebrow">YOUR WORKSPACE</span><h1>Dashboard.</h1><p>Pick up where you left off, open something shared with you, or use a plugin tool.</p><button class="primary-button" id="homeNewPage" type="button"><svg><use href="#plus"></use></svg> New page</button></div>
+        <div class="home-content dashboard-content">
+          <section><div class="home-section-title"><h2>Recently viewed</h2><button id="viewAllPages" type="button">View all</button></div><div class="page-card-grid" id="recentCards"></div></section>
+          <section id="sharedSection"><div class="home-section-title"><h2>Shared with me</h2></div><div class="dashboard-grid" id="sharedCards"></div></section>
+          <section id="pluginSection"><div class="home-section-title"><h2>Plugins</h2></div><div class="dashboard-grid" id="pluginCards"></div></section>
+        </div>
+      </section>
+    </main>
+
+    <aside class="toc-panel" id="tocPanel" aria-label="Table of contents" aria-hidden="true">
+      <div class="panel-header"><div><span class="eyebrow">ON THIS PAGE</span><h3>Contents</h3></div><button class="icon-button" id="tocClose" type="button" aria-label="Close table of contents"><svg><use href="#x"></use></svg></button></div>
+      <nav id="tocList"></nav>
+    </aside>
+  </div>
+
+  <div class="popover hidden" id="moreMenu" role="menu" aria-hidden="true">
+    <button data-more="copy" type="button" role="menuitem"><svg><use href="#copy"></use></svg>Copy page link</button>
+    <button data-more="duplicate" type="button" role="menuitem"><svg><use href="#duplicate"></use></svg>Duplicate</button>
+    <button data-more="history" type="button" role="menuitem"><svg><use href="#history"></use></svg>Revision history</button>
+    <button data-more="preview" type="button" role="menuitem"><svg><use href="#export"></use></svg>Preview page</button>
+    <button data-more="markdown" type="button" role="menuitem"><svg><use href="#download"></use></svg>Export Markdown</button>
+    <button data-more="html" type="button" role="menuitem"><svg><use href="#download"></use></svg>Export HTML</button>
+    <div class="menu-divider"></div>
+    <button class="danger" data-more="delete" type="button" role="menuitem"><svg><use href="#trash"></use></svg>Move to trash</button>
+  </div>
+
+  <dialog class="modal search-modal" id="searchModal" aria-label="Search wiki">
+    <form method="dialog" class="modal-shell">
+      <div class="search-field"><svg aria-hidden="true"><use href="#search"></use></svg><input id="searchInput" type="search" autocomplete="off" role="combobox" aria-label="Search your wiki" aria-autocomplete="list" aria-controls="searchResults" aria-expanded="false" placeholder="Search your wiki…"><kbd>ESC</kbd></div>
+      <div class="search-filters"><span class="filter-pill active">All pages</span><span>Search titles and content</span></div>
+      <div class="search-results" id="searchResults" role="status" aria-label="Search results" aria-live="polite"></div>
+      <div class="search-footer"><span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span><span><kbd>↵</kbd> Open</span></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="spaceModal" aria-labelledby="spaceModalTitle">
+    <form class="modal-shell settings-shell" id="spaceForm">
+      <div class="modal-header"><div><span class="eyebrow">SPACE SETTINGS</span><h2 id="spaceModalTitle">Shape your space</h2><p>Give this part of your wiki a name and a little personality.</p></div><button class="icon-button dialog-close" type="button" aria-label="Close space settings"><svg><use href="#x"></use></svg></button></div>
+      <label>Name<input name="name" maxlength="80" required></label>
+      <label>Description<textarea name="description" maxlength="500" rows="3"></textarea></label>
+      <label>Accent color<div class="color-row"><input name="color" type="color"><span>Used to identify this space in your sidebar.</span></div></label>
+      <div class="modal-actions"><button class="secondary-button" id="newSpaceMode" type="button">New space</button><button class="secondary-button" id="deleteSpace" type="button">Delete space</button><span class="action-spacer"></span><button class="secondary-button dialog-close" type="button">Cancel</button><button class="primary-button" id="spaceSubmit" type="submit">Save changes</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="trashModal" aria-labelledby="trashModalTitle">
+    <div class="modal-shell settings-shell">
+      <div class="modal-header"><div><span class="eyebrow">TRASH</span><h2 id="trashModalTitle">Recently deleted</h2><p>Restore pages you did not mean to lose.</p></div><button class="icon-button dialog-close" type="button" aria-label="Close trash"><svg><use href="#x"></use></svg></button></div>
+      <div class="trash-list" id="trashList" aria-live="polite"></div>
+    </div>
+  </dialog>
+
+  <dialog class="modal profile-settings-modal" id="accountModal" aria-labelledby="accountModalTitle">
+    <div class="modal-shell settings-shell profile-settings-shell">
+      <div class="modal-header"><div><span class="eyebrow">PROFILE &amp; ACCOUNT</span><h2 id="accountModalTitle">Your profile identity</h2><p>Choose what other people can see without changing access to your pages.</p></div><button class="icon-button dialog-close" type="button" aria-label="Close profile settings"><svg><use href="#x"></use></svg></button></div>
+      <div class="profile-settings-grid">
+        <div>
+          <section class="profile-avatar-editor" aria-labelledby="profileAvatarHeading">
+            <div class="profile-avatar-frame"><img id="profileAvatarImage" alt=""><span id="profileAvatarFallback" aria-hidden="true">?</span></div>
+            <div><h3 id="profileAvatarHeading">Profile photo</h3><p>JPEG, PNG, GIF, or WebP. 5 MB maximum.</p><div class="profile-avatar-actions"><input class="hidden" id="profileAvatarInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp"><button class="secondary-button" id="profileAvatarUpload" type="button">Choose photo</button><button class="text-button" id="profileAvatarRemove" type="button">Remove</button></div></div>
+          </section>
+          <form id="profileForm">
+            <label>Display name<input name="display_name" maxlength="80" autocomplete="name"></label>
+            <label>Username<input name="username" maxlength="80" required autocomplete="username"></label>
+            <label>Biography<textarea name="biography" maxlength="1000" rows="4" placeholder="A short introduction"></textarea></label>
+            <label>Profile visibility<select name="profile_visibility"><option value="private">Private — only me</option><option value="members">Members — signed-in users</option><option value="public">Public — anyone</option></select></label>
+            <label>Current password <small>(required only to change username)</small><input name="current_password" type="password" autocomplete="current-password"></label>
+            <div class="modal-actions"><button class="primary-button" type="submit">Save profile</button></div>
+          </form>
+        </div>
+        <aside class="profile-preview" aria-labelledby="profilePreviewHeading">
+          <span class="eyebrow">PROFILE PREVIEW</span>
+          <div class="profile-preview-avatar"><img id="profilePreviewAvatar" alt=""><span id="profilePreviewFallback" aria-hidden="true">?</span></div>
+          <h3 id="profilePreviewHeading">Your name</h3>
+          <div class="profile-preview-username" id="profilePreviewUsername">@username</div>
+          <p id="profilePreviewBiography">Your biography will appear here.</p>
+          <span class="profile-visibility-badge" id="profilePreviewVisibility">Private</span>
+          <code id="profilePreviewUrl">/u/profile</code>
+        </aside>
+      </div>
+      <section class="account-security">
+        <div><span class="eyebrow">ACCOUNT SECURITY</span><h3>Password and sessions</h3><p>Changing your password signs out every other browser.</p></div>
+        <form id="accountForm">
+          <label>Current password<input name="current_password" type="password" required autocomplete="current-password"></label>
+          <label>New password<input name="new_password" type="password" minlength="12" autocomplete="new-password"></label>
+          <div class="modal-actions"><button class="secondary-button" id="invalidateSessions" type="button">Sign out other sessions</button><span class="action-spacer"></span><button class="primary-button" type="submit">Change password</button></div>
+        </form>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog class="modal plugin-admin-modal" id="pluginAdminModal" aria-labelledby="pluginAdminModalTitle">
+    <div class="modal-shell settings-shell plugin-admin-shell">
+      <div class="modal-header"><div><span class="eyebrow">PLUGIN MANAGEMENT</span><h2 id="pluginAdminModalTitle">Installed plugins</h2><p>Review trusted local extensions, diagnostics, and their effective state.</p></div><button class="icon-button dialog-close" type="button" aria-label="Close plugin management"><svg><use href="#x"></use></svg></button></div>
+      <div class="plugin-admin-note">Plugins are trusted code with full application access. Upload only ZIP files you have reviewed. Changes reload the full application.</div>
+      <form class="plugin-upload-form" id="pluginUploadForm"><label>Upload plugin ZIP<input id="pluginZip" name="plugin" type="file" accept=".zip,application/zip" required></label><button class="primary-button" type="submit">Install plugin</button></form>
+      <div class="plugin-admin-list" id="pluginAdminList" aria-live="polite"></div>
+    </div>
+  </dialog>
+
+  <dialog class="modal appearance-modal" id="appearanceModal" aria-labelledby="appearanceModalTitle">
+    <div class="modal-shell settings-shell appearance-shell">
+      <div class="modal-header"><div><span class="eyebrow">BRAND &amp; THEME</span><h2 id="appearanceModalTitle">Whitelabel appearance</h2><p>Brand this installation and tune the light and dark CSS color tokens.</p></div><button class="icon-button dialog-close" type="button" aria-label="Close appearance settings"><svg><use href="#x"></use></svg></button></div>
+      <form id="appearanceForm">
+        <div class="appearance-brand-grid"><label>Brand name<input name="brandName" maxlength="80" required></label><label>Application URL<input name="appUrl" type="url" required></label><label>Tailscale IP<input name="tailscaleIp" placeholder="100.x.x.x"></label><label>Port<input name="port" type="number" min="1" max="65535" required></label></div>
+        <div class="brand-upload-grid"><label>Brand icon<input id="brandIconInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp"></label><button class="secondary-button" id="brandIconUpload" type="button">Upload icon</button><label>Brand banner<input id="brandBannerInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp"></label><button class="secondary-button" id="brandBannerUpload" type="button">Upload banner</button></div>
+        <div class="theme-token-columns">
+          <fieldset><legend>Light mode</legend><div id="lightThemeTokens" class="theme-token-grid"></div></fieldset>
+          <fieldset><legend>Dark mode</legend><div id="darkThemeTokens" class="theme-token-grid"></div></fieldset>
+        </div>
+        <div class="modal-actions"><button class="secondary-button dialog-close" type="button">Cancel</button><button class="primary-button" type="submit">Save appearance</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog class="modal diagnostics-modal" id="diagnosticsModal" aria-labelledby="diagnosticsModalTitle">
+    <div class="modal-shell settings-shell diagnostics-shell">
+      <div class="modal-header"><div><span class="eyebrow">SYSTEM DIAGNOSTICS</span><h2 id="diagnosticsModalTitle">Runtime health</h2><p>Review application, storage, backup, and database status without exposing private content.</p></div><button class="icon-button dialog-close" type="button" aria-label="Close system diagnostics"><svg><use href="#x"></use></svg></button></div>
+      <div class="diagnostics-note">Checks are read-only except for a temporary storage write probe that is removed immediately.</div>
+      <div class="diagnostics-content" id="diagnosticsContent" aria-live="polite"></div>
+      <div class="modal-actions"><button class="secondary-button dialog-close" type="button">Close</button><button class="primary-button" id="diagnosticsRefresh" type="button">Run checks again</button></div>
+    </div>
+  </dialog>
+
+  <dialog class="modal history-modal" id="historyModal" aria-labelledby="historyModalTitle">
+    <div class="modal-shell history-shell">
+      <div class="modal-header"><div><span class="eyebrow">REVISION HISTORY</span><h2 id="historyModalTitle">Earlier versions</h2><p>Compare changes or restore a snapshot without losing later history.</p></div><button class="icon-button dialog-close" type="button" aria-label="Close revision history"><svg><use href="#x"></use></svg></button></div>
+      <div class="history-layout">
+        <div class="history-list" id="historyList" aria-label="Revisions"></div>
+        <div class="history-preview"><div class="history-meta" id="historyMeta">Choose a revision.</div><div class="history-diff" id="historyPreview"></div><div class="modal-actions"><button class="primary-button hidden" id="historyRestore" type="button">Restore this version</button></div></div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="modal share-modal" id="shareModal" aria-labelledby="shareModalTitle">
+    <div class="modal-shell settings-shell share-shell">
+      <div class="modal-header"><div><span class="eyebrow">COLLABORATION</span><h2 id="shareModalTitle">Share access</h2><p>Grant view or edit access to a whole space or a page subtree.</p></div><button class="icon-button dialog-close" type="button" aria-label="Close collaboration"><svg><use href="#x"></use></svg></button></div>
+      <form id="shareForm" class="share-form">
+        <label>Scope<select name="resource_type"><option value="page">Current page and children</option><option value="space">Current space</option></select></label>
+        <label>Collaborator<select name="user_id"></select></label>
+        <label>Access<select name="role"><option value="viewer">Can view</option><option value="editor">Can edit</option></select></label>
+        <button class="primary-button" type="submit">Grant access</button>
+      </form>
+      <div class="share-list" id="shareList"></div>
+      <form id="collaboratorForm" class="collaborator-form hidden">
+        <div><span class="eyebrow">LOCAL ACCOUNT</span><h3>Create a collaborator</h3></div>
+        <label>Username<input name="username" maxlength="80" required autocomplete="off"></label>
+        <label>Temporary password<input name="password" type="password" minlength="12" required autocomplete="new-password"></label>
+        <button class="secondary-button" type="submit">Create account</button>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog class="media-lightbox" id="mediaLightbox" aria-label="Expanded media">
+    <button class="media-lightbox-close" id="mediaLightboxClose" type="button" aria-label="Close expanded media"><svg><use href="#x"></use></svg></button>
+    <div id="mediaLightboxContent"></div>
+  </dialog>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+
+  <svg class="svg-sprite" aria-hidden="true">
+    <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></symbol>
+    <symbol id="home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"></path><path d="M5 10v10h14V10M9 20v-6h6v6"></path></symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+    <symbol id="folder" viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v11H3z"></path></symbol>
+    <symbol id="file-plus" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v5h5M12 11v6M9 14h6"></path></symbol>
+    <symbol id="more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></symbol>
+    <symbol id="star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"></path></symbol>
+    <symbol id="trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"></path></symbol>
+    <symbol id="moon" viewBox="0 0 24 24"><path d="M20 16.5A9 9 0 0 1 7.5 4 9 9 0 1 0 20 16.5Z"></path></symbol>
+    <symbol id="palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h5a4 4 0 0 0 4-4c0-3.3-4-6-9-6Z"></path><circle cx="7.5" cy="10" r="1"></circle><circle cx="10" cy="6.5" r="1"></circle><circle cx="15" cy="7" r="1"></circle></symbol>
+    <symbol id="menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"></path></symbol>
+    <symbol id="x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"></path></symbol>
+    <symbol id="chevron-down" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"></path></symbol>
+    <symbol id="chevrons" viewBox="0 0 24 24"><path d="m8 9 4-4 4 4M16 15l-4 4-4-4"></path></symbol>
+    <symbol id="chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></symbol>
+    <symbol id="export" viewBox="0 0 24 24"><path d="M12 3v12m0-12 4 4m-4-4L8 7M5 13v7h14v-7"></path></symbol>
+    <symbol id="list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+    <symbol id="list-ul" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+    <symbol id="list-ol" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M4 5h2v3M4 11h2l-2 3h2M4 17h2v3H4"></path></symbol>
+    <symbol id="link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2"></path></symbol>
+    <symbol id="file-link" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v5h5M9 14h6M12 11v6"></path></symbol>
+    <symbol id="sparkles" viewBox="0 0 24 24"><path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2zM18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8zM5 13l.7 2.3L8 16l-2.3.7L5 19l-.7-2.3L2 16l2.3-.7z"></path></symbol>
+    <symbol id="table" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"></rect><path d="M3 10h18M9 5v14M15 5v14"></path></symbol>
+    <symbol id="image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8" cy="9" r="2"></circle><path d="m21 15-5-5L5 20"></path></symbol>
+    <symbol id="clear" viewBox="0 0 24 24"><path d="m4 20 7-7M13 5l6 6-7 7-6-6zM14 20h6"></path></symbol>
+    <symbol id="copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></symbol>
+    <symbol id="duplicate" viewBox="0 0 24 24"><rect x="7" y="7" width="13" height="13" rx="2"></rect><path d="M17 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2"></path></symbol>
+    <symbol id="download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M5 20h14"></path></symbol>
+    <symbol id="history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v6l4 2"></path></symbol>
+    <symbol id="edit" viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10zM13.5 7l3.5 3.5M4 20l1-4.5"></path></symbol>
+    <symbol id="logout" viewBox="0 0 24 24"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"></path></symbol>
+    <symbol id="users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><path d="M3 20v-2a5 5 0 0 1 10 0v2M16 5a3 3 0 0 1 0 6M16 14a5 5 0 0 1 5 5v1"></path></symbol>
+    <symbol id="plugin" viewBox="0 0 24 24"><path d="M8 3v4M16 3v4M5 7h14v4a7 7 0 0 1-7 7 7 7 0 0 1-7-7zM12 18v3"></path></symbol>
+    <symbol id="diagnostics" viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"></path></symbol>
+  </svg>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

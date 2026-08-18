@@ -1,0 +1,9 @@
+{
+  "name": "Public lifecycle probe",
+  "version": "1.0.0",
+  "enabled": true,
+  "public": {
+    "bootstrap": "public.php",
+    "prefixes": ["/request-public"]
+  }
+}
