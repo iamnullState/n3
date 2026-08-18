@@ -1,5 +1,10 @@
 # Reference plugin
 
+[![PHP](https://img.shields.io/badge/PHP-Plugin-777BB4?logo=php&logoColor=white)](https://www.php.net/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-Browser-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/docs/Web/JavaScript)
+[![GitHub profile](https://img.shields.io/badge/GitHub-iamnullState-181717?logo=github&logoColor=white)](https://github.com/iamnullState)
+[![Example source](https://img.shields.io/badge/Source-reference--plugin-181717?logo=github&logoColor=white)](https://github.com/iamnullState/n3/tree/main/examples/plugins/reference-plugin)
+
 This is a non-production example of the supported n3 plugin contract. It lives outside the production `plugins/` directory so it cannot be discovered or executed accidentally. Plugins are trusted local code with the same privileges as n3; review every file before installing one.
 
 The example is disabled in its manifest by default and demonstrates:

@@ -1,5 +1,12 @@
 # n3
 
+[![PHP 8.3](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white)](https://www.php.net/)
+[![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES2023-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/docs/Web/JavaScript)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![GitHub profile](https://img.shields.io/badge/GitHub-iamnullState-181717?logo=github&logoColor=white)](https://github.com/iamnullState)
+[![Repository](https://img.shields.io/badge/Repository-iamnullState%2Fn3-181717?logo=github&logoColor=white)](https://github.com/iamnullState/n3)
+
 n3 is a small self-hosted personal wiki for private, local use. It runs as one PHP/Apache container, stores data in SQLite, and uses plain browser JavaScript with no external runtime services.
 
 This repository contains source code only. It intentionally excludes accounts, passwords, sessions, wiki content, uploads, backups, machine-specific addresses, and personal plugins.

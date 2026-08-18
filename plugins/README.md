@@ -1,5 +1,11 @@
 # n3 plugins
 
+[![PHP](https://img.shields.io/badge/PHP-Plugin_API-777BB4?logo=php&logoColor=white)](https://www.php.net/)
+[![SQLite](https://img.shields.io/badge/SQLite-Migrations-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-Browser_API-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/docs/Web/JavaScript)
+[![GitHub profile](https://img.shields.io/badge/GitHub-iamnullState-181717?logo=github&logoColor=white)](https://github.com/iamnullState)
+[![Plugin source](https://img.shields.io/badge/Source-n3%2Fplugins-181717?logo=github&logoColor=white)](https://github.com/iamnullState/n3/tree/main/plugins)
+
 n3 plugins are trusted local code. They execute with the same filesystem, database, session, and application privileges as n3, so install only code you have reviewed. The current plugin contract provides manifest metadata, dashboard widgets, sidebar navigation, structured profile/page-information contributions, authenticated API routes, normalized uploads, private plugin media, signed-in browser CSS/JavaScript, opt-in prefix-scoped public `GET`/`HEAD` routes, and reviewed plugin-owned SQLite migrations.
 
 Before implementing a plugin, document its supported n3 version, permissions, routes, storage, privacy boundaries, installation, verification, and rollback behavior in the plugin's own README. Features such as secret retention, integrated core settings, and background work require a separately reviewed core extension.
