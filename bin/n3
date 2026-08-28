@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use N3\Core\Database\ConnectionFactory;
+use N3\App\Identity\LocalOutboxNotifier;
+use N3\App\Identity\PdoRateLimiter;
+use N3\App\Identity\PdoVerificationTokenRepository;
 use N3\Core\Database\MigrationRunner;
 
 $root = dirname(__DIR__);
@@ -16,11 +19,32 @@ if ($command === 'help') {
     fwrite(STDOUT, "  php bin/n3 migrate\n");
     fwrite(STDOUT, "  php bin/n3 migrate:status\n");
     fwrite(STDOUT, "  php bin/n3 migrate:rollback --force\n");
+    fwrite(STDOUT, "  php bin/n3 identity:prune\n");
     exit(0);
 }
 
 try {
     $app = require $root . '/config/app.php';
+
+    if ($command === 'identity:prune') {
+        $runtime = require $root . '/config/database.php';
+        $connection = (new ConnectionFactory())->create($runtime);
+        $now = time();
+        $tokens = (new PdoVerificationTokenRepository($connection))->prune($now);
+        $limits = (new PdoRateLimiter($connection, 'prune-does-not-hash-subjects'))->prune($now - 172800);
+        $outbox = (new LocalOutboxNotifier($root . '/storage/outbox'))->prune($now - 604800);
+        $events = $connection->prepare('DELETE FROM security_events WHERE created_at < FROM_UNIXTIME(:cutoff)');
+        $events->execute(['cutoff' => $now - 7776000]);
+        fwrite(STDOUT, sprintf(
+            "Pruned tokens=%d limits=%d outbox=%d events=%d\n",
+            $tokens,
+            $limits,
+            $outbox,
+            $events->rowCount(),
+        ));
+        exit(0);
+    }
+
     $database = require $root . '/config/migrations.php';
     $connection = (new ConnectionFactory())->create($database);
     $runner = new MigrationRunner($connection, $root . '/database/migrations');

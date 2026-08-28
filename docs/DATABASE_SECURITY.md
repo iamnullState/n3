@@ -141,3 +141,5 @@ docker compose --env-file .env.docker --profile test run --rm php-test
 - Define credential rotation automation and emergency account revocation.
 - Define data retention, export, deletion, and privacy requirements for user records.
 - Complete a deployment-specific threat model and security review.
+
+Identity security events store only controlled event/outcome codes, keyed subject/IP hashes, optional user IDs, request IDs, and timestamps. Verification bearer tokens are stored only as SHA-256 hashes in MariaDB. The private local outbox necessarily contains the one-time delivery URL and is prohibited for enabled production registration.

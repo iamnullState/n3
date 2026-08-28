@@ -6,6 +6,7 @@ namespace N3\Core;
 
 use N3\Core\Http\Request;
 use N3\Core\Http\Response;
+use N3\Core\Http\MethodNotAllowed;
 use N3\Core\Http\RouteNotFound;
 use N3\Core\Http\Router;
 use N3\Core\Logging\FileLogger;
@@ -25,11 +26,15 @@ final readonly class Application
     public function handle(Request $request): Response
     {
         $requestId = bin2hex(random_bytes(8));
+        $request = $request->withAttribute('request_id', $requestId);
 
         try {
             $response = $this->router->dispatch($request);
         } catch (RouteNotFound) {
             $response = $this->errorResponse('errors/404', 'Page not found', 404);
+        } catch (MethodNotAllowed $exception) {
+            $response = $this->errorResponse('errors/404', 'Method not allowed', 405)
+                ->withHeader('Allow', implode(', ', $exception->allowed));
         } catch (Throwable $exception) {
             $this->logger->error('unhandled_exception', [
                 'request_id' => $requestId,

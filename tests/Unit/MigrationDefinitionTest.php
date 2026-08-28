@@ -5,16 +5,25 @@ declare(strict_types=1);
 namespace N3\Tests\Unit;
 
 use N3\Core\Database\Migration;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class MigrationDefinitionTest extends TestCase
 {
-    public function testUserMigrationMatchesItsFilename(): void
+    #[DataProvider('migrationFiles')]
+    public function testMigrationMatchesItsFilename(string $file): void
     {
-        $file = dirname(__DIR__, 2) . '/database/migrations/202608270001_create_users.php';
         $migration = require $file;
 
         self::assertInstanceOf(Migration::class, $migration);
         self::assertSame(pathinfo($file, PATHINFO_FILENAME), $migration->version());
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function migrationFiles(): iterable
+    {
+        $path = dirname(__DIR__, 2) . '/database/migrations/';
+        yield 'users' => [$path . '202608270001_create_users.php'];
+        yield 'identity security' => [$path . '202608270002_create_identity_security.php'];
     }
 }

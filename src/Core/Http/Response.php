@@ -21,6 +21,15 @@ final class Response
         return new self($body, $status, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 
+    public static function redirect(string $location, int $status = 303): self
+    {
+        if (!str_starts_with($location, '/')) {
+            throw new \InvalidArgumentException('Redirect locations must be local paths.');
+        }
+
+        return new self('', $status, ['Location' => $location]);
+    }
+
     public function withHeader(string $name, string $value): self
     {
         $response = clone $this;

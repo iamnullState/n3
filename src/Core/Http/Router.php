@@ -20,6 +20,12 @@ final class Router
         $this->add('GET', $path, $handler);
     }
 
+    /** @param callable(Request): Response $handler */
+    public function post(string $path, callable $handler): void
+    {
+        $this->add('POST', $path, $handler);
+    }
+
     /**
      * @param callable(Request): Response $handler
      */
@@ -34,6 +40,20 @@ final class Router
         $handler = $this->routes[$request->method . ' ' . $request->path] ?? null;
 
         if ($handler === null) {
+            $suffix = ' ' . $request->path;
+            $allowed = [];
+
+            foreach (array_keys($this->routes) as $route) {
+                if (str_ends_with($route, $suffix)) {
+                    $allowed[] = strstr($route, ' ', true) ?: '';
+                }
+            }
+
+            if ($allowed !== []) {
+                sort($allowed);
+                throw new MethodNotAllowed(array_values(array_unique($allowed)));
+            }
+
             throw new RouteNotFound();
         }
 

@@ -16,6 +16,7 @@ declare(strict_types=1);
         <title><?= $escape($viewData['pageTitle'] ?? 'N3') ?></title>
         <link rel="icon" href="data:,">
         <link rel="stylesheet" href="/assets/css/app.css">
+        <script src="/assets/javascript/identity.js" defer></script>
     </head>
     <body>
         <a class="skip-link" href="#main-content">Skip to content</a>

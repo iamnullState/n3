@@ -3,3 +3,5 @@
 /.phpunit.cache/
 /vendor/
 /storage/logs/*.log
+/storage/outbox/
+/storage/sessions/

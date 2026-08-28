@@ -15,7 +15,7 @@ The Secure Core Kernel milestone provides:
 - safe 404 and 500 views;
 - PHPUnit coverage for the request lifecycle, routing, escaping, and landing page.
 
-The PDO/MariaDB foundation is now in progress. Registration, authentication, CSRF tokens, modules, and CMS authoring remain deferred to their own milestones.
+The PDO/MariaDB foundation and verified-registration slice are implemented. Authentication, recovery, modules, and CMS authoring remain in later slices.
 
 ## Requirements
 
@@ -77,3 +77,4 @@ bin/                Project CLI entry points
 ```
 
 See `docs/DATABASE.md` for the persistence contract and `docs/DATABASE_SECURITY.md` for database security controls and remaining production gates.
+See `docs/IDENTITY.md` for registration, verification, session, rate-limit, and local-outbox behavior.
