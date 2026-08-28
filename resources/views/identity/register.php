@@ -8,7 +8,7 @@ $flash = is_array($viewData['flash'] ?? null) ? $viewData['flash'] : null;
 ?>
 <header class="site-header">
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">N3</span><span>N3</span></a>
-    <a href="/">Home</a>
+    <a href="/login">Sign in</a>
 </header>
 <main class="auth-page" id="main-content">
     <article class="auth-card" aria-labelledby="register-title">

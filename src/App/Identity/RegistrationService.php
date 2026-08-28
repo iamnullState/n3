@@ -107,6 +107,10 @@ final readonly class RegistrationService
 
     public function verify(string $tokenHash, string $ip, string $requestId): bool
     {
+        if (!$this->limiter->allow('verify_token_ip', 'ip:' . $ip, 20, 3600)) {
+            $this->events->record('email_verification', 'rate_limited', '', $ip, null, $requestId);
+            return false;
+        }
         $userId = $this->transactions->run(function () use ($tokenHash): ?int {
             $userId = $this->tokens->consume($tokenHash, time());
 

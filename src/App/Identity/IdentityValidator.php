@@ -42,4 +42,19 @@ final class IdentityValidator
 
         return $errors;
     }
+
+    /** @return array<string, string> */
+    public function passwordErrors(string $password, string $confirmation): array
+    {
+        $errors = [];
+        $length = mb_strlen($password, 'UTF-8');
+        if ($length < 12 || $length > 1024 || str_contains($password, "\0")) {
+            $errors['password'] = 'Password must be between 12 and 1024 characters.';
+        }
+        if (!hash_equals($password, $confirmation)) {
+            $errors['password_confirmation'] = 'Password confirmation does not match.';
+        }
+
+        return $errors;
+    }
 }

@@ -33,6 +33,7 @@ final class IdentityRegistrationTest extends TestCase
     private PdoUserRepository $users;
     private string $email;
     private string $outbox;
+    private string $ip;
     private IdentityConfig $config;
 
     protected function setUp(): void
@@ -83,6 +84,7 @@ final class IdentityRegistrationTest extends TestCase
             new TransactionManager($this->connection),
         );
         $this->email = 'identity-' . bin2hex(random_bytes(8)) . '@example.test';
+        $this->ip = '10.20.' . random_int(1, 254) . '.' . random_int(1, 254);
     }
 
     protected function tearDown(): void
@@ -106,7 +108,7 @@ final class IdentityRegistrationTest extends TestCase
             $this->email,
             'correct horse battery staple',
             'correct horse battery staple',
-            '127.0.0.20',
+            $this->ip,
             '1234567890abcdef',
         );
 
@@ -127,8 +129,8 @@ final class IdentityRegistrationTest extends TestCase
         $storedHash = (string) $this->connection->query('SELECT token_hash FROM email_verification_tokens ORDER BY id DESC LIMIT 1')->fetchColumn();
         self::assertSame(hash('sha256', $rawToken), $storedHash);
         self::assertStringNotContainsString($rawToken, $storedHash);
-        self::assertTrue($this->service->verify($storedHash, '127.0.0.20', '1234567890abcdef'));
-        self::assertFalse($this->service->verify($storedHash, '127.0.0.20', '1234567890abcdef'));
+        self::assertTrue($this->service->verify($storedHash, $this->ip, '1234567890abcdef'));
+        self::assertFalse($this->service->verify($storedHash, $this->ip, '1234567890abcdef'));
 
         $verified = $this->users->findByNormalizedEmail($this->email);
         self::assertTrue($verified?->emailVerified ?? false);
@@ -137,7 +139,7 @@ final class IdentityRegistrationTest extends TestCase
 
     public function testDuplicateRegistrationReturnsTheSameAcceptedOutcome(): void
     {
-        $arguments = ['Member', $this->email, 'correct horse battery staple', 'correct horse battery staple', '127.0.0.21', '1234567890abcdef'];
+        $arguments = ['Member', $this->email, 'correct horse battery staple', 'correct horse battery staple', $this->ip, '1234567890abcdef'];
         self::assertTrue($this->service->register(...$arguments)->accepted());
         self::assertTrue($this->service->register(...$arguments)->accepted());
         $statement = $this->connection->prepare('SELECT COUNT(*) FROM users WHERE email_normalized = :email');
@@ -172,7 +174,7 @@ final class IdentityRegistrationTest extends TestCase
             'email' => $this->email,
             'password' => 'correct horse battery staple',
             'password_confirmation' => 'correct horse battery staple',
-        ], ['REMOTE_ADDR' => '127.0.0.31'])->withAttribute('request_id', '1234567890abcdef'));
+        ], ['REMOTE_ADDR' => $this->ip])->withAttribute('request_id', '1234567890abcdef'));
         self::assertSame(303, $created->status());
         self::assertSame('/register', $created->headers()['Location']);
 
@@ -188,7 +190,7 @@ final class IdentityRegistrationTest extends TestCase
 
         $verified = $controller->verify(Request::create('POST', '/verify-email', [
             '_csrf' => $csrf->token('verify_email'),
-        ], ['REMOTE_ADDR' => '127.0.0.31'])->withAttribute('request_id', '1234567890abcdef'));
+        ], ['REMOTE_ADDR' => $this->ip])->withAttribute('request_id', '1234567890abcdef'));
         self::assertSame(303, $verified->status());
         self::assertTrue($this->users->findByNormalizedEmail($this->email)?->emailVerified ?? false);
     }

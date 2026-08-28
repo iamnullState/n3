@@ -82,7 +82,7 @@ Credential rotation procedure for a future deployment:
 - `createPending()` assigns `pending_verification` and `member` in trusted server code.
 - Connection failures are wrapped in a generic `DatabaseException`; user-facing paths must not expose the underlying PDO exception.
 
-Prepared statements do not replace input validation. Email normalization, length limits, authorization, rate limiting, and abuse controls belong in the identity use case planned for the next milestone.
+Prepared statements do not replace input validation. Identity use cases enforce email normalization and bounds, a 12–1024 character passphrase policy, server-assigned authority, database-backed rate limits, CSRF, and generic account-discovery responses.
 
 ## Migration and recovery controls
 
@@ -142,4 +142,4 @@ docker compose --env-file .env.docker --profile test run --rm php-test
 - Define data retention, export, deletion, and privacy requirements for user records.
 - Complete a deployment-specific threat model and security review.
 
-Identity security events store only controlled event/outcome codes, keyed subject/IP hashes, optional user IDs, request IDs, and timestamps. Verification bearer tokens are stored only as SHA-256 hashes in MariaDB. The private local outbox necessarily contains the one-time delivery URL and is prohibited for enabled production registration.
+Identity security events store only controlled event/outcome codes, keyed subject/IP hashes, optional user IDs, request IDs, and timestamps. Verification and reset bearer tokens are stored only as SHA-256 hashes in MariaDB. Password reset increments the user's session version so existing sessions fail validation. The private local outbox necessarily contains one-time delivery URLs and is prohibited for enabled production registration.

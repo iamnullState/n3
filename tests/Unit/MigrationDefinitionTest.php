@@ -25,5 +25,6 @@ final class MigrationDefinitionTest extends TestCase
         $path = dirname(__DIR__, 2) . '/database/migrations/';
         yield 'users' => [$path . '202608270001_create_users.php'];
         yield 'identity security' => [$path . '202608270002_create_identity_security.php'];
+        yield 'authentication recovery' => [$path . '202608270003_create_authentication_recovery.php'];
     }
 }

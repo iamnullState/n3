@@ -46,6 +46,15 @@ final class NativeSessionStore implements SessionStore
         $this->start();
         $_SESSION = [];
         session_destroy();
+        if (!headers_sent()) {
+            setcookie(session_name(), '', [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'secure' => $this->secureCookie,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        }
         $this->started = false;
     }
 

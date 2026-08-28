@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace N3\App\Identity;
 
 use N3\App\Controller\IdentityController;
+use N3\App\Controller\AccessController;
 use N3\Core\Database\ConnectionFactory;
 use N3\Core\Database\TransactionManager;
 use N3\Core\Security\CsrfTokenManager;
@@ -34,5 +35,37 @@ final class IdentityKernel
         );
 
         return new IdentityController($view, $config, $registration, $csrf, new FlashBag($session), $session);
+    }
+
+    public static function accessController(string $root, View $view, string $environment): AccessController
+    {
+        $database = require $root . '/config/database.php';
+        $connection = (new ConnectionFactory())->create($database);
+        $config = IdentityConfig::fromEnvironment($environment);
+        $session = new NativeSessionStore($root . '/storage/sessions', $environment === 'production');
+        $csrf = new CsrfTokenManager($session);
+        $users = new PdoUserRepository($connection);
+        $rateLimiter = new PdoRateLimiter($connection, $config->securityHashKey);
+        $events = new PdoSecurityEventRecorder($connection, $config->securityHashKey);
+        $notifier = new LocalOutboxNotifier($root . '/storage/outbox');
+
+        return new AccessController(
+            $view,
+            new AuthenticationService(new IdentityValidator(), $users, $rateLimiter, $events),
+            new RecoveryService(
+                $config,
+                new IdentityValidator(),
+                $users,
+                new PdoPasswordResetTokenRepository($connection),
+                $notifier,
+                $rateLimiter,
+                $events,
+                new TransactionManager($connection),
+            ),
+            new AuthSessionManager($session, $csrf, $users, $config->sessionIdleTtl, $config->sessionAbsoluteTtl),
+            $csrf,
+            new FlashBag($session),
+            $session,
+        );
     }
 }

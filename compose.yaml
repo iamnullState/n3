@@ -41,6 +41,14 @@ services:
         condition: service_healthy
     working_dir: /app
     environment:
+      APP_ENV: test
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: ${N3_TEST_DB_NAME:?Set N3_TEST_DB_NAME in .env.docker}
+      DB_USER: ${N3_TEST_DB_USER:?Set N3_TEST_DB_USER in .env.docker}
+      DB_PASSWORD: ${N3_TEST_DB_PASSWORD:?Set N3_TEST_DB_PASSWORD in .env.docker}
+      DB_MIGRATION_USER: ${N3_TEST_DB_MIGRATION_USER:?Set N3_TEST_DB_MIGRATION_USER in .env.docker}
+      DB_MIGRATION_PASSWORD: ${N3_TEST_DB_MIGRATION_PASSWORD:?Set N3_TEST_DB_MIGRATION_PASSWORD in .env.docker}
       N3_TEST_DB_HOST: mariadb
       N3_TEST_DB_PORT: 3306
       N3_TEST_DB_NAME: ${N3_TEST_DB_NAME:?Set N3_TEST_DB_NAME in .env.docker}
@@ -49,6 +57,7 @@ services:
       N3_TEST_DB_MIGRATION_USER: ${N3_TEST_DB_MIGRATION_USER:?Set N3_TEST_DB_MIGRATION_USER in .env.docker}
       N3_TEST_DB_MIGRATION_PASSWORD: ${N3_TEST_DB_MIGRATION_PASSWORD:?Set N3_TEST_DB_MIGRATION_PASSWORD in .env.docker}
     volumes:
+      - ./bin:/app/bin:ro
       - ./bootstrap:/app/bootstrap:ro
       - ./config:/app/config:ro
       - ./database:/app/database:ro

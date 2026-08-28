@@ -37,6 +37,18 @@ $router->post('/register', static fn ($request) => $identity()->register($reques
 $router->get('/verify-email', static fn ($request) => $identity()->showVerify($request));
 $router->post('/verify-email', static fn ($request) => $identity()->verify($request));
 $router->post('/verify-email/resend', static fn ($request) => $identity()->resend($request));
+$accessController = null;
+$access = static function () use (&$accessController, $root, $view, $config) {
+    return $accessController ??= IdentityKernel::accessController($root, $view, $config['environment']);
+};
+$router->get('/login', static fn ($request) => $access()->showLogin($request));
+$router->post('/login', static fn ($request) => $access()->login($request));
+$router->post('/logout', static fn ($request) => $access()->logout($request));
+$router->get('/account', static fn ($request) => $access()->account($request));
+$router->get('/forgot-password', static fn ($request) => $access()->showForgot($request));
+$router->post('/forgot-password', static fn ($request) => $access()->requestReset($request));
+$router->get('/reset-password', static fn ($request) => $access()->showReset($request));
+$router->post('/reset-password', static fn ($request) => $access()->reset($request));
 
 return new Application(
     router: $router,

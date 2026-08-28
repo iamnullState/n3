@@ -3,10 +3,15 @@
 declare(strict_types=1);
 
 use N3\Core\Database\ConnectionFactory;
+use N3\App\Identity\AdminBootstrapService;
+use N3\App\Identity\IdentityValidator;
 use N3\App\Identity\LocalOutboxNotifier;
+use N3\App\Identity\PdoPasswordResetTokenRepository;
 use N3\App\Identity\PdoRateLimiter;
+use N3\App\Identity\PdoUserRepository;
 use N3\App\Identity\PdoVerificationTokenRepository;
 use N3\Core\Database\MigrationRunner;
+use N3\Core\Database\TransactionManager;
 
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
@@ -15,29 +20,86 @@ $command = $argv[1] ?? 'help';
 $force = in_array('--force', $argv, true);
 
 if ($command === 'help') {
-    fwrite(STDOUT, "N3 database commands:\n");
+    fwrite(STDOUT, "N3 commands:\n");
     fwrite(STDOUT, "  php bin/n3 migrate\n");
     fwrite(STDOUT, "  php bin/n3 migrate:status\n");
     fwrite(STDOUT, "  php bin/n3 migrate:rollback --force\n");
     fwrite(STDOUT, "  php bin/n3 identity:prune\n");
+    fwrite(STDOUT, "  php bin/n3 admin:create --name=NAME --email=ADDRESS [--password-stdin]\n");
     exit(0);
 }
 
 try {
     $app = require $root . '/config/app.php';
 
+    if ($command === 'admin:create') {
+        foreach ($argv as $argument) {
+            if (str_starts_with($argument, '--password=')) {
+                throw new RuntimeException('Passwords must never be supplied as command arguments.');
+            }
+        }
+        $readOption = static function (string $name) use ($argv): string {
+            $prefix = '--' . $name . '=';
+            foreach ($argv as $argument) {
+                if (str_starts_with($argument, $prefix)) {
+                    return substr($argument, strlen($prefix));
+                }
+            }
+            throw new RuntimeException(sprintf('Missing required option --%s.', $name));
+        };
+        $fromStdin = in_array('--password-stdin', $argv, true);
+        if ($fromStdin) {
+            $password = rtrim((string) fgets(STDIN), "\r\n");
+        } else {
+            if (!function_exists('stream_isatty') || !stream_isatty(STDIN)) {
+                throw new RuntimeException('Interactive password input requires a terminal; use --password-stdin.');
+            }
+            fwrite(STDOUT, 'Password: ');
+            shell_exec('stty -echo');
+            try {
+                $password = rtrim((string) fgets(STDIN), "\r\n");
+            } finally {
+                shell_exec('stty echo');
+                fwrite(STDOUT, "\n");
+            }
+            fwrite(STDOUT, 'Confirm password: ');
+            shell_exec('stty -echo');
+            try {
+                $confirmation = rtrim((string) fgets(STDIN), "\r\n");
+            } finally {
+                shell_exec('stty echo');
+                fwrite(STDOUT, "\n");
+            }
+            if (!hash_equals($password, $confirmation)) {
+                throw new RuntimeException('Password confirmation does not match.');
+            }
+        }
+        $runtime = require $root . '/config/database.php';
+        $connection = (new ConnectionFactory())->create($runtime);
+        $users = new PdoUserRepository($connection);
+        $id = (new AdminBootstrapService(new IdentityValidator(), $users, new TransactionManager($connection)))->create(
+            $readOption('name'),
+            $readOption('email'),
+            $password,
+        );
+        fwrite(STDOUT, sprintf("Created active verified administrator %d.\n", $id));
+        exit(0);
+    }
+
     if ($command === 'identity:prune') {
         $runtime = require $root . '/config/database.php';
         $connection = (new ConnectionFactory())->create($runtime);
         $now = time();
-        $tokens = (new PdoVerificationTokenRepository($connection))->prune($now);
+        $verificationTokens = (new PdoVerificationTokenRepository($connection))->prune($now);
+        $resetTokens = (new PdoPasswordResetTokenRepository($connection))->prune($now);
         $limits = (new PdoRateLimiter($connection, 'prune-does-not-hash-subjects'))->prune($now - 172800);
         $outbox = (new LocalOutboxNotifier($root . '/storage/outbox'))->prune($now - 604800);
         $events = $connection->prepare('DELETE FROM security_events WHERE created_at < FROM_UNIXTIME(:cutoff)');
         $events->execute(['cutoff' => $now - 7776000]);
         fwrite(STDOUT, sprintf(
-            "Pruned tokens=%d limits=%d outbox=%d events=%d\n",
-            $tokens,
+            "Pruned verification_tokens=%d reset_tokens=%d limits=%d outbox=%d events=%d\n",
+            $verificationTokens,
+            $resetTokens,
             $limits,
             $outbox,
             $events->rowCount(),

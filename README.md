@@ -15,12 +15,13 @@ The Secure Core Kernel milestone provides:
 - safe 404 and 500 views;
 - PHPUnit coverage for the request lifecycle, routing, escaping, and landing page.
 
-The PDO/MariaDB foundation and verified-registration slice are implemented. Authentication, recovery, modules, and CMS authoring remain in later slices.
+The PDO/MariaDB foundation and Phase 3 identity foundation are implemented. Verified members can register, sign in, sign out, and recover passwords; the first administrator can be bootstrapped through the protected CLI. Modules and CMS authoring remain later milestones.
 
 ## Requirements
 
 - PHP 8.5 or newer
 - Composer 2
+- PHP extensions: PDO and mbstring; `pdo_mysql` for live MariaDB use
 - Docker with Compose for the live MariaDB integration suite, or host PHP `pdo_mysql` plus a disposable MariaDB test database
 
 ## Setup

@@ -8,5 +8,7 @@ interface VerificationNotifier
 {
     public function sendVerification(string $email, string $displayName, string $url): void;
 
+    public function sendPasswordReset(string $email, string $displayName, string $url): void;
+
     public function prune(int $olderThanEpoch): int;
 }

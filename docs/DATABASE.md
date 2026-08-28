@@ -55,7 +55,7 @@ Changing initialization credentials does not modify an existing database volume.
 
 ## Minimal user persistence
 
-The initial `users` table stores identity data needed by the next milestone:
+The `users` table stores identity and session-revocation data:
 
 - numeric internal identifier;
 - display name;
@@ -63,7 +63,10 @@ The initial `users` table stores identity data needed by the next milestone:
 - password hash;
 - account status;
 - server-assigned role key;
-- verification, last-login, created, and updated timestamps.
+- verification, last-login, created, and updated timestamps;
+- a session version used to invalidate previously issued sessions.
+
+Separate tables contain hashed verification/reset tokens, fixed-window rate-limit buckets, and sanitized security events. Raw bearer tokens are never stored in MariaDB.
 
 Public registration must never accept `account_status` or `role_key` from the request. `PdoUserRepository::createPending()` fixes these values to `pending_verification` and `member`.
 
@@ -89,4 +92,4 @@ Unit tests validate configuration and migration definitions without a database. 
 
 Integration tests must never target staging or production data.
 
-Observed on 2026-08-27 against both MariaDB 11.8.9 and 12.3.2 with PHP 8.5.9: 31 tests, 56 assertions, 30 passed, and one environment-specific unit test was skipped because `pdo_mysql` was present.
+Observed on 2026-08-27 against both MariaDB 11.8.9 and 12.3.2 with PHP 8.5.9: 51 tests, 145 assertions, 50 passed, and one environment-specific unit test was skipped because `pdo_mysql` was present.
