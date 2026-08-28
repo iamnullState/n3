@@ -1,0 +1,53 @@
+<?php
+
+declare(strict_types=1);
+
+use N3\Core\Database\ConnectionFactory;
+use N3\Core\Database\MigrationRunner;
+
+$root = dirname(__DIR__);
+require $root . '/vendor/autoload.php';
+
+$command = $argv[1] ?? 'help';
+$force = in_array('--force', $argv, true);
+
+if ($command === 'help') {
+    fwrite(STDOUT, "N3 database commands:\n");
+    fwrite(STDOUT, "  php bin/n3 migrate\n");
+    fwrite(STDOUT, "  php bin/n3 migrate:status\n");
+    fwrite(STDOUT, "  php bin/n3 migrate:rollback --force\n");
+    exit(0);
+}
+
+try {
+    $app = require $root . '/config/app.php';
+    $database = require $root . '/config/migrations.php';
+    $connection = (new ConnectionFactory())->create($database);
+    $runner = new MigrationRunner($connection, $root . '/database/migrations');
+
+    if ($command === 'migrate') {
+        $versions = $runner->migrate();
+        fwrite(STDOUT, $versions === [] ? "No pending migrations.\n" : implode("\n", $versions) . "\n");
+        exit(0);
+    }
+
+    if ($command === 'migrate:status') {
+        foreach ($runner->status() as $status) {
+            fwrite(STDOUT, sprintf("[%s] %s\n", $status->applied ? 'x' : ' ', $status->version));
+        }
+        exit(0);
+    }
+
+    if ($command === 'migrate:rollback') {
+        $allowed = $force && $app['environment'] !== 'production';
+        $versions = $runner->rollbackLatestBatch($allowed);
+        fwrite(STDOUT, $versions === [] ? "No applied migrations.\n" : implode("\n", $versions) . "\n");
+        exit(0);
+    }
+
+    fwrite(STDERR, sprintf("Unknown command: %s\n", $command));
+    exit(2);
+} catch (Throwable $exception) {
+    fwrite(STDERR, sprintf("%s\n", $exception->getMessage()));
+    exit(1);
+}

@@ -15,12 +15,13 @@ The Secure Core Kernel milestone provides:
 - safe 404 and 500 views;
 - PHPUnit coverage for the request lifecycle, routing, escaping, and landing page.
 
-MariaDB, registration, authentication, CSRF tokens, modules, and CMS authoring are intentionally deferred to their own milestones.
+The PDO/MariaDB foundation is now in progress. Registration, authentication, CSRF tokens, modules, and CMS authoring remain deferred to their own milestones.
 
 ## Requirements
 
 - PHP 8.5 or newer
 - Composer 2
+- Docker with Compose for the live MariaDB integration suite, or host PHP `pdo_mysql` plus a disposable MariaDB test database
 
 ## Setup
 
@@ -45,6 +46,18 @@ composer test
 find bootstrap config public src tests -name '*.php' -print0 | xargs -0 -n1 php -l
 ```
 
+To run the database suite without installing `pdo_mysql` on the host:
+
+```bash
+cp .env.docker.example .env.docker
+# Replace all three example passwords in .env.docker.
+docker compose --env-file .env.docker up -d --wait mariadb
+docker compose --env-file .env.docker --profile test build php-test
+docker compose --env-file .env.docker --profile test run --rm php-test
+```
+
+MariaDB is exposed only at `127.0.0.1:3307`. Stop it without deleting its data with `docker compose --env-file .env.docker down`.
+
 Runtime logs are written to `storage/logs/app.log` and ignored by Git.
 
 ## Structure
@@ -58,4 +71,9 @@ src/App/            Application controllers and future use cases
 src/Core/           Framework kernel and infrastructure
 storage/            Private runtime data
 tests/              Unit, feature, and fixture files
+database/           Ordered/checksummed schema migrations
+docs/               Architecture and operational notes
+bin/                Project CLI entry points
 ```
+
+See `docs/DATABASE.md` for the persistence contract and `docs/DATABASE_SECURITY.md` for database security controls and remaining production gates.
