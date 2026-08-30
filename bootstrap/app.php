@@ -8,6 +8,11 @@ use N3\App\Content\ContentKernel;
 use N3\Core\Application;
 use N3\Core\Http\Router;
 use N3\Core\Logging\FileLogger;
+use N3\Core\Event\EventDispatcher;
+use N3\Core\Module\ModuleManager;
+use N3\Core\Module\ModuleLifecycleFailed;
+use N3\Core\Event\EventListenerFailed;
+use N3\Core\Service\ServiceRegistry;
 use N3\Core\View\View;
 
 $root = dirname(__DIR__);
@@ -28,6 +33,7 @@ set_error_handler(
 
 $view = new View($root . '/resources/views');
 $router = new Router();
+$logger = new FileLogger($root . '/storage/logs/app.log');
 $router->get('/', new HomeController($view, $config));
 $identityController = null;
 $identity = static function () use (&$identityController, $root, $view, $config) {
@@ -64,9 +70,25 @@ $router->post('/admin/pages/{id}/publish', static fn ($request) => $content()['a
 $router->post('/admin/pages/{id}/unpublish', static fn ($request) => $content()['admin']->unpublish($request));
 $router->get('/pages/{slug}', static fn ($request) => $content()['public']->show($request));
 
+$services = new ServiceRegistry();
+$services->register(Router::class, $router);
+$services->register(View::class, $view);
+$services->register(FileLogger::class, $logger);
+$events = new EventDispatcher();
+$modules = require $root . '/config/modules.php';
+try {
+    (new ModuleManager($config['version'], $services, $events))->boot($modules);
+} catch (ModuleLifecycleFailed | EventListenerFailed $exception) {
+    $context = $exception instanceof ModuleLifecycleFailed
+        ? ['module' => $exception->moduleId, 'phase' => $exception->phase]
+        : ['module' => $exception->moduleId, 'listener' => $exception->listenerId, 'event_class' => $exception->eventClass];
+    $logger->error('module_startup_failed', $context);
+    throw $exception;
+}
+
 return new Application(
     router: $router,
     view: $view,
-    logger: new FileLogger($root . '/storage/logs/app.log'),
+    logger: $logger,
     environment: $config['environment'],
 );
