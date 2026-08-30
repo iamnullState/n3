@@ -12,11 +12,13 @@ declare(strict_types=1);
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="description" content="<?= $escape($viewData['metaDescription'] ?? 'N3 CMS') ?>">
+        <?php if (isset($viewData['robots'])): ?><meta name="robots" content="<?= $escape($viewData['robots']) ?>"><?php endif; ?>
         <meta name="color-scheme" content="light dark">
         <title><?= $escape($viewData['pageTitle'] ?? 'N3') ?></title>
         <link rel="icon" href="data:,">
         <link rel="stylesheet" href="/assets/css/app.css">
         <script src="/assets/javascript/identity.js" defer></script>
+        <script src="/assets/javascript/content.js" defer></script>
     </head>
     <body>
         <a class="skip-link" href="#main-content">Skip to content</a>

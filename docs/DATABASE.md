@@ -68,6 +68,8 @@ The `users` table stores identity and session-revocation data:
 
 Separate tables contain hashed verification/reset tokens, fixed-window rate-limit buckets, and sanitized security events. Raw bearer tokens are never stored in MariaDB.
 
+Phase 4 adds `pages` and `content_events`. Pages use a unique canonical slug, fixed draft/published status, author/editor foreign keys, and an incrementing lock version for optimistic concurrency. Content events store controlled lifecycle metadata rather than page bodies. See [CONTENT.md](CONTENT.md).
+
 Public registration must never accept `account_status` or `role_key` from the request. `PdoUserRepository::createPending()` fixes these values to `pending_verification` and `member`.
 
 ## Database accounts
@@ -92,4 +94,4 @@ Unit tests validate configuration and migration definitions without a database. 
 
 Integration tests must never target staging or production data.
 
-Observed on 2026-08-27 against both MariaDB 11.8.9 and 12.3.2 with PHP 8.5.9: 51 tests, 145 assertions, 50 passed, and one environment-specific unit test was skipped because `pdo_mysql` was present.
+Observed on 2026-08-30 against both MariaDB 11.8.9 and 12.3.2 with PHP 8.5.9: 59 tests, 184 assertions, 58 passed, and one environment-specific unit test was skipped because `pdo_mysql` was present.

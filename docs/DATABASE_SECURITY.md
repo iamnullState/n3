@@ -143,3 +143,5 @@ docker compose --env-file .env.docker --profile test run --rm php-test
 - Complete a deployment-specific threat model and security review.
 
 Identity security events store only controlled event/outcome codes, keyed subject/IP hashes, optional user IDs, request IDs, and timestamps. Verification and reset bearer tokens are stored only as SHA-256 hashes in MariaDB. Password reset increments the user's session version so existing sessions fail validation. The private local outbox necessarily contains one-time delivery URLs and is prohibited for enabled production registration.
+
+Page authoring is restricted to active verified administrators and all mutations require CSRF. Public queries select only published rows by an indexed, validated canonical slug. Page bodies remain plain text and are escaped at render time. Optimistic lock versions reject stale updates, and content audit events exclude page text. Published content must be unpublished before editing until a revision model is implemented.

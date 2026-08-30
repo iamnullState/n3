@@ -1,0 +1,6 @@
+<?php declare(strict_types=1); $page = $viewData['page']; $preview = (bool) ($viewData['preview'] ?? false); ?>
+<header class="site-header"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true">N3</span><span>N3</span></a><?php if ($preview): ?><a href="/admin/pages/<?= $escape($page->id) ?>/edit">Back to editor</a><?php endif; ?></header>
+<main class="public-page" id="main-content">
+    <?php if ($preview): ?><div class="preview-banner" role="status"><strong>Preview:</strong> This <?= $escape($page->status) ?> page is visible only to administrators.</div><?php endif; ?>
+    <article aria-labelledby="page-title"><header class="public-page-heading"><p class="eyebrow"><?= $preview ? 'Page preview' : 'N3 page' ?></p><h1 id="page-title"><?= $escape($page->title) ?></h1><?php if ($page->excerpt !== ''): ?><p class="page-excerpt"><?= $escape($page->excerpt) ?></p><?php endif; ?></header><div class="page-body"><?= nl2br($escape($page->body), false) ?></div></article>
+</main>

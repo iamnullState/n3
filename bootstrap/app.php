@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use N3\App\Controller\HomeController;
 use N3\App\Identity\IdentityKernel;
+use N3\App\Content\ContentKernel;
 use N3\Core\Application;
 use N3\Core\Http\Router;
 use N3\Core\Logging\FileLogger;
@@ -49,6 +50,19 @@ $router->get('/forgot-password', static fn ($request) => $access()->showForgot($
 $router->post('/forgot-password', static fn ($request) => $access()->requestReset($request));
 $router->get('/reset-password', static fn ($request) => $access()->showReset($request));
 $router->post('/reset-password', static fn ($request) => $access()->reset($request));
+$contentControllers = null;
+$content = static function () use (&$contentControllers, $root, $view, $config) {
+    return $contentControllers ??= ContentKernel::controllers($root, $view, $config['environment']);
+};
+$router->get('/admin/pages', static fn ($request) => $content()['admin']->index($request));
+$router->get('/admin/pages/create', static fn ($request) => $content()['admin']->create($request));
+$router->post('/admin/pages', static fn ($request) => $content()['admin']->store($request));
+$router->get('/admin/pages/{id}/edit', static fn ($request) => $content()['admin']->edit($request));
+$router->post('/admin/pages/{id}', static fn ($request) => $content()['admin']->update($request));
+$router->get('/admin/pages/{id}/preview', static fn ($request) => $content()['admin']->preview($request));
+$router->post('/admin/pages/{id}/publish', static fn ($request) => $content()['admin']->publish($request));
+$router->post('/admin/pages/{id}/unpublish', static fn ($request) => $content()['admin']->unpublish($request));
+$router->get('/pages/{slug}', static fn ($request) => $content()['public']->show($request));
 
 return new Application(
     router: $router,

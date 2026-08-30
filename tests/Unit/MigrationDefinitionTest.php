@@ -26,5 +26,6 @@ final class MigrationDefinitionTest extends TestCase
         yield 'users' => [$path . '202608270001_create_users.php'];
         yield 'identity security' => [$path . '202608270002_create_identity_security.php'];
         yield 'authentication recovery' => [$path . '202608270003_create_authentication_recovery.php'];
+        yield 'pages' => [$path . '202608300004_create_pages.php'];
     }
 }

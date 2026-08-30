@@ -45,4 +45,28 @@ final class RouterTest extends TestCase
             self::assertSame(['POST'], $exception->allowed);
         }
     }
+
+    public function testItDispatchesDynamicSegmentsAsRequestParameters(): void
+    {
+        $router = new Router();
+        $router->get('/pages/{slug}', static fn (Request $request): Response => Response::html(
+            (string) $request->routeParameter('slug'),
+        ));
+
+        self::assertSame('hello-world', $router->dispatch(Request::create('GET', '/pages/hello-world'))->body());
+        self::assertSame('space value', $router->dispatch(Request::create('GET', '/pages/space%20value'))->body());
+    }
+
+    public function testDynamicRoutesReportMethodNotAllowed(): void
+    {
+        $router = new Router();
+        $router->post('/admin/pages/{id}/publish', static fn (): Response => Response::html('published'));
+
+        try {
+            $router->dispatch(Request::create('GET', '/admin/pages/12/publish'));
+            self::fail('Expected a method-not-allowed response.');
+        } catch (MethodNotAllowed $exception) {
+            self::assertSame(['POST'], $exception->allowed);
+        }
+    }
 }

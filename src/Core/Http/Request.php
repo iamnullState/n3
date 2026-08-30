@@ -108,4 +108,13 @@ final readonly class Request
     {
         return $this->attributes[$key] ?? $default;
     }
+
+    public function routeParameter(string $key, ?string $default = null): ?string
+    {
+        $parameters = $this->attributes['route_parameters'] ?? [];
+
+        return is_array($parameters) && isset($parameters[$key]) && is_string($parameters[$key])
+            ? $parameters[$key]
+            : $default;
+    }
 }

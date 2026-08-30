@@ -15,7 +15,7 @@ The Secure Core Kernel milestone provides:
 - safe 404 and 500 views;
 - PHPUnit coverage for the request lifecycle, routing, escaping, and landing page.
 
-The PDO/MariaDB foundation and Phase 3 identity foundation are implemented. Verified members can register, sign in, sign out, and recover passwords; the first administrator can be bootstrapped through the protected CLI. Modules and CMS authoring remain later milestones.
+The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS vertical slice: administrators can create plain-text Page drafts, preview them, publish/unpublish them, and serve published content by canonical slug. Modules and richer authoring remain later milestones.
 
 ## Requirements
 
@@ -79,3 +79,4 @@ bin/                Project CLI entry points
 
 See `docs/DATABASE.md` for the persistence contract and `docs/DATABASE_SECURITY.md` for database security controls and remaining production gates.
 See `docs/IDENTITY.md` for registration, verification, session, rate-limit, and local-outbox behavior.
+See `docs/CONTENT.md` for the Page model, lifecycle, authorization, routes, audit behavior, and quality gates.
