@@ -11,6 +11,7 @@ See [DATABASE_SECURITY.md](DATABASE_SECURITY.md) for the credential model, threa
 - Character set: `utf8mb4`
 - Table engine: InnoDB
 - One isolated database per N3 installation
+- PDO sessions explicitly use UTC for portable timestamp and lease comparisons
 
 MariaDB 11.8.9 and 12.3.2 are verified through the Docker test environment. The host PHP installation does not need `pdo_mysql`; the optional `php-test` container provides it.
 
@@ -69,6 +70,8 @@ The `users` table stores identity and session-revocation data:
 Separate tables contain hashed verification/reset tokens, fixed-window rate-limit buckets, and sanitized security events. Raw bearer tokens are never stored in MariaDB.
 
 Phase 4 adds `pages` and `content_events`. Pages use a unique canonical slug, fixed draft/published status, author/editor foreign keys, and an incrementing lock version for optimistic concurrency. Content events store controlled lifecycle metadata rather than page bodies. See [CONTENT.md](CONTENT.md).
+
+Phase 5B adds `modules`, `module_events`, `jobs`, and `job_events`. Module rows retain the last deployment-synchronized version, state, and manifest hash. Job payloads are bounded JSON; leases use random tokens, failures use controlled codes, and lifecycle events exclude payloads and exception text. See [MODULES.md](MODULES.md) and [JOBS.md](JOBS.md).
 
 Public registration must never accept `account_status` or `role_key` from the request. `PdoUserRepository::createPending()` fixes these values to `pending_verification` and `member`.
 

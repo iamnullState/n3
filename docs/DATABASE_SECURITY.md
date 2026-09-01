@@ -21,6 +21,8 @@ This document defines the security boundary for N3's PDO/MariaDB foundation. It 
 | User identity rows | Account takeover and privacy exposure | Store password hashes only; restrict access; minimize logs and exports containing email addresses. |
 | Database backups | Offline disclosure or unrecoverable loss | Encrypt backups, restrict backup credentials, define retention, and test restoration. |
 | Migration history | Tampering or drift | Restrict production access, retain checksums, and investigate any mismatch instead of overwriting history. |
+| Module registry | Unreviewed code activation or state drift | Keep configuration as the reviewed allowlist; preview/apply synchronization; reject downgrades and same-version manifest changes. |
+| Durable jobs | Duplicate side effects, payload disclosure, stale workers | Require idempotent handlers, bounded JSON, random leases, token-checked completion, sanitized errors, and explicit recovery. |
 
 ## Credential roles
 
@@ -145,3 +147,5 @@ docker compose --env-file .env.docker --profile test run --rm php-test
 Identity security events store only controlled event/outcome codes, keyed subject/IP hashes, optional user IDs, request IDs, and timestamps. Verification and reset bearer tokens are stored only as SHA-256 hashes in MariaDB. Password reset increments the user's session version so existing sessions fail validation. The private local outbox necessarily contains one-time delivery URLs and is prohibited for enabled production registration.
 
 Page authoring is restricted to active verified administrators and all mutations require CSRF. Public queries select only published rows by an indexed, validated canonical slug. Page bodies remain plain text and are escaped at render time. Optimistic lock versions reject stale updates, and content audit events exclude page text. Published content must be unpublished before editing until a revision model is implemented.
+
+Module synchronization uses the runtime DML account only after the migration account creates the lifecycle tables. It never installs PHP code or executes DDL. Job payloads are private application data and must not contain secrets; job audit rows store controlled codes only. Lease tokens are random, compared in conditional updates, never printed by CLI commands, and cleared at transition. Production grants should eventually restrict modules through Core service contracts, but trusted in-process PHP cannot be database-sandboxed from other Core code under the current shared runtime account.

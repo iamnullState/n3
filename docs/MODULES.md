@@ -1,6 +1,6 @@
 # Core Services, Events, and Modules
 
-Phase 5A introduces the first executable module boundary. It is intentionally limited to trusted, deployment-installed PHP modules. It does not permit uploaded extensions, remote code, runtime installation, public APIs, webhooks, queues, or scheduled jobs.
+Phase 5A introduced the executable module boundary. Phase 5B adds deployment-state reconciliation and a durable job foundation. Both remain limited to trusted, deployment-installed PHP modules. Uploaded extensions, remote code, runtime installation, public APIs, webhooks, and an application-managed daemon remain prohibited.
 
 ## Trust boundary
 
@@ -8,7 +8,7 @@ An enabled in-process module has the same operating-system and PHP privileges as
 
 Code that is tenant-supplied, user-supplied, independently administered, or not trusted with Core secrets and database access must not run as an in-process module. A later external-service boundary will use authenticated, versioned HTTP APIs and webhooks with explicit data minimization and timeouts.
 
-`config/modules.php` is the current deployment-time allowlist. A module present in source but omitted from that file is disabled and is never instantiated by bootstrap. There is no administration-screen toggle or database-backed module state in this slice.
+`config/modules.php` is the deployment-time runtime allowlist. A module present in source but omitted from that file is disabled and is never instantiated by bootstrap. Phase 5B records the last synchronized state in MariaDB for deployment drift detection and audit, but intentionally does not add a database query to every HTTP bootstrap. There is no administration-screen toggle.
 
 ## Manifest contract
 
@@ -44,7 +44,21 @@ dispatch CoreStarted synchronously
 
 Dependencies register and boot before their consumers. Registration and listener ordering is deterministic. A throwing `register`, `boot`, or event listener fails closed: the request process does not continue with a partially initialized module graph. Lifecycle exceptions expose the module, phase, event type, and controlled listener identifier without copying arbitrary exception messages into the public error.
 
-Install, update, uninstall, module migrations, persisted enable/disable state, recovery from partial deployment, and compatibility checks across skipped versions remain Phase 5 follow-up work. Until those rules exist, adding or removing a module is a reviewed deployment change with the normal application backup and rollback procedure.
+## Durable deployment state
+
+Migration `202608300005_create_module_lifecycle_and_jobs` adds `modules` and append-only `module_events`. `module:status` compares the reviewed allowlist with the last synchronized state. `module:sync` previews the same plan and changes nothing unless `--apply` is explicit.
+
+- First synchronization records the module as installed and enabled.
+- A higher manifest version produces an audited forward update.
+- A missing allowlisted module is retained as disabled; no code, tables, jobs, or files are deleted.
+- Re-adding a disabled module enables its retained record.
+- Downgrades fail closed.
+- Changing dependencies, conflicts, or compatibility without changing the module version fails closed through the manifest hash.
+- The complete manifest graph is validated before synchronization.
+
+This registry is deployment evidence, not a live extension marketplace. A deployment must take a backup, run Core migrations, preview synchronization, apply it, and confirm `module:status` before serving the new release. A failure rolls back registry DML as one transaction; it does not roll back deployed PHP files or MariaDB DDL.
+
+Module-owned migrations, destructive uninstall, skipped-version upgrade scripts, and per-module rollback remain deferred. Until a migration namespace and recovery contract are approved, all schema changes use the reviewed Core migration pipeline and modules must not run DDL during `register()` or `boot()`.
 
 ## Service registry
 
@@ -64,11 +78,14 @@ Delivery becomes active only after all module listener registration is sealed. I
 
 `n3/core-probe` is an enabled, non-functional contract probe. It registers a private status service, marks itself booted, and observes `CoreStarted`. It adds no routes, database tables, files, UI, network calls, or user-facing behavior. Removing it from `config/modules.php` disables it cleanly.
 
+## Jobs
+
+Phase 5B jobs are documented in [JOBS.md](JOBS.md). `config/jobs.php` is the reviewed handler allowlist. The one-shot CLI worker refuses handlers whose owning module is not enabled.
+
 ## Remaining Phase 5 boundaries
 
-- durable module state and safe install/update/uninstall workflows;
-- module-owned database migrations, storage, configuration, and least-privilege policy;
-- jobs with ownership, locks, timeouts, retries, dead letters, and operator recovery;
+- module-owned database migrations, destructive uninstall, storage/config namespaces, and finer database privileges;
+- worker supervision, heartbeat/lease renewal, hard process timeouts, job pruning, and retention policy;
 - public REST authentication, authorization, errors, pagination, rate limits, and idempotency;
 - inbound/outbound webhook signing, replay defense, retries, and delivery audit;
 - structured startup/event observability beyond controlled exception attribution.

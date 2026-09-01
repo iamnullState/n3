@@ -15,7 +15,7 @@ The Secure Core Kernel milestone provides:
 - safe 404 and 500 views;
 - PHPUnit coverage for the request lifecycle, routing, escaping, and landing page.
 
-The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS vertical slice: administrators can create plain-text Page drafts, preview them, publish/unpublish them, and serve published content by canonical slug. Phase 5A begins the executable module boundary with a frozen service registry, synchronous typed events, deterministic manifest/dependency validation, and a non-functional Core Probe module.
+The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5A establishes trusted module boot contracts, and Phase 5B adds preview-first durable module synchronization plus an atomic leased job queue with bounded retry and dead-letter behavior.
 
 ## Requirements
 
@@ -81,3 +81,4 @@ See `docs/DATABASE.md` for the persistence contract and `docs/DATABASE_SECURITY.
 See `docs/IDENTITY.md` for registration, verification, session, rate-limit, and local-outbox behavior.
 See `docs/CONTENT.md` for the Page model, lifecycle, authorization, routes, audit behavior, and quality gates.
 See `docs/MODULES.md` for the in-process trust model, service and event contracts, module manifest/lifecycle, failure semantics, and deferred external boundaries.
+See `docs/JOBS.md` for durable payload, claim, lease, retry, dead-letter, and operator-recovery semantics.

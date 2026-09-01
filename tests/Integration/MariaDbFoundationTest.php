@@ -109,6 +109,12 @@ final class MariaDbFoundationTest extends TestCase
         self::assertSame('member', $row['role_key']);
     }
 
+    public function testConnectionsUseUtcForPortableTimestampsAndLeases(): void
+    {
+        self::assertSame('+00:00', $this->connection->query('SELECT @@session.time_zone')->fetchColumn());
+        self::assertSame('+00:00', $this->migrationConnection->query('SELECT @@session.time_zone')->fetchColumn());
+    }
+
     public function testNormalizedEmailUniquenessIsEnforcedByMariaDb(): void
     {
         $repository = new PdoUserRepository($this->connection);

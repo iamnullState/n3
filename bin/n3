@@ -12,6 +12,12 @@ use N3\App\Identity\PdoUserRepository;
 use N3\App\Identity\PdoVerificationTokenRepository;
 use N3\Core\Database\MigrationRunner;
 use N3\Core\Database\TransactionManager;
+use N3\Core\Job\JobWorker;
+use N3\Core\Job\JobHandler;
+use N3\Core\Job\PdoJobQueue;
+use N3\Core\Module\ModuleGraph;
+use N3\Core\Module\ModuleLifecycleService;
+use N3\Core\Module\PdoModuleLifecycleRepository;
 
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
@@ -26,11 +32,131 @@ if ($command === 'help') {
     fwrite(STDOUT, "  php bin/n3 migrate:rollback --force\n");
     fwrite(STDOUT, "  php bin/n3 identity:prune\n");
     fwrite(STDOUT, "  php bin/n3 admin:create --name=NAME --email=ADDRESS [--password-stdin]\n");
+    fwrite(STDOUT, "  php bin/n3 module:status\n");
+    fwrite(STDOUT, "  php bin/n3 module:sync [--apply]\n");
+    fwrite(STDOUT, "  php bin/n3 jobs:status\n");
+    fwrite(STDOUT, "  php bin/n3 jobs:work --once\n");
+    fwrite(STDOUT, "  php bin/n3 jobs:recover [--apply]\n");
+    fwrite(STDOUT, "  php bin/n3 jobs:retry --id=ID --force\n");
     exit(0);
 }
 
 try {
     $app = require $root . '/config/app.php';
+    date_default_timezone_set($app['timezone']);
+
+    if ($command === 'module:status' || $command === 'module:sync') {
+        $runtime = require $root . '/config/database.php';
+        $connection = (new ConnectionFactory())->create($runtime);
+        $modules = (new ModuleGraph($app['version']))->ordered(require $root . '/config/modules.php');
+        $service = new ModuleLifecycleService(
+            new PdoModuleLifecycleRepository($connection),
+            new TransactionManager($connection),
+        );
+        $changes = $service->plan($modules);
+        foreach ($changes as $change) {
+            fwrite(STDOUT, sprintf(
+                "[%s] %s %s -> %s\n",
+                $change->action,
+                $change->moduleId,
+                $change->fromVersion ?? '-',
+                $change->toVersion ?? '-',
+            ));
+        }
+        if ($changes === []) {
+            fwrite(STDOUT, "Module registry is synchronized.\n");
+            exit(0);
+        }
+        if ($command === 'module:status') {
+            exit(1);
+        }
+        if (!in_array('--apply', $argv, true)) {
+            fwrite(STDOUT, "Preview only; rerun with --apply after taking a backup.\n");
+            exit(1);
+        }
+        $service->apply($changes);
+        fwrite(STDOUT, sprintf("Applied %d module lifecycle change(s).\n", count($changes)));
+        exit(0);
+    }
+
+    if (str_starts_with($command, 'jobs:')) {
+        $runtime = require $root . '/config/database.php';
+        $connection = (new ConnectionFactory())->create($runtime);
+        $queue = new PdoJobQueue($connection, new TransactionManager($connection));
+        $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+
+        if ($command === 'jobs:status') {
+            $status = $queue->status($now);
+            fwrite(STDOUT, sprintf(
+                "pending=%d running=%d succeeded=%d dead=%d expired_leases=%d\n",
+                $status->pending,
+                $status->running,
+                $status->succeeded,
+                $status->dead,
+                $status->expiredLeases,
+            ));
+            exit($status->dead > 0 || $status->expiredLeases > 0 ? 1 : 0);
+        }
+
+        if ($command === 'jobs:work') {
+            if (!in_array('--once', $argv, true)) {
+                throw new RuntimeException('Phase 5B workers require the explicit --once option.');
+            }
+            $owner = sprintf('n3:%d:%s', getmypid(), substr(hash('sha256', (string) gethostname()), 0, 8));
+            $modules = (new ModuleGraph($app['version']))->ordered(require $root . '/config/modules.php');
+            $enabled = array_fill_keys(array_map(static fn ($module): string => $module->manifest()->id, $modules), true);
+            $handlers = require $root . '/config/jobs.php';
+            foreach ($handlers as $handler) {
+                if (!$handler instanceof JobHandler) {
+                    throw new RuntimeException('Job handler configuration contains an invalid entry.');
+                }
+                if (!isset($enabled[$handler->moduleId()])) {
+                    throw new RuntimeException(sprintf('Job handler module "%s" is not enabled.', $handler->moduleId()));
+                }
+            }
+            $result = (new JobWorker($queue, $handlers, $owner))->runOnce($now);
+            fwrite(STDOUT, sprintf(
+                "status=%s job_id=%s error_code=%s\n",
+                $result->status,
+                $result->jobId === null ? '-' : (string) $result->jobId,
+                $result->errorCode ?? '-',
+            ));
+            exit($result->status === 'dead' ? 1 : 0);
+        }
+
+        if ($command === 'jobs:recover') {
+            $status = $queue->status($now);
+            if (!in_array('--apply', $argv, true)) {
+                fwrite(STDOUT, sprintf("expired_leases=%d; preview only, rerun with --apply.\n", $status->expiredLeases));
+                exit($status->expiredLeases > 0 ? 1 : 0);
+            }
+            $result = $queue->recoverExpired($now);
+            fwrite(STDOUT, sprintf("requeued=%d dead=%d\n", $result->requeued, $result->dead));
+            exit($result->dead > 0 ? 1 : 0);
+        }
+
+        if ($command === 'jobs:retry') {
+            if (!in_array('--force', $argv, true)) {
+                throw new RuntimeException('Retrying a dead job requires --force.');
+            }
+            $id = null;
+            foreach ($argv as $argument) {
+                if (preg_match('/^--id=([1-9][0-9]*)$/D', $argument, $matches)) {
+                    $id = (int) $matches[1];
+                }
+            }
+            if ($id === null) {
+                throw new RuntimeException('A positive --id=ID is required.');
+            }
+            if (!$queue->retryDead($id, $now)) {
+                throw new RuntimeException('The requested job does not exist or is not dead.');
+            }
+            fwrite(STDOUT, sprintf("Retried dead job %d.\n", $id));
+            exit(0);
+        }
+
+        throw new RuntimeException(sprintf('Unknown jobs command: %s', $command));
+    }
 
     if ($command === 'admin:create') {
         foreach ($argv as $argument) {

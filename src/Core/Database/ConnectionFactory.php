@@ -21,7 +21,7 @@ final class ConnectionFactory
         }
 
         try {
-            return new PDO(
+            $connection = new PDO(
                 $config->dsn(),
                 $config->username,
                 $config->password(),
@@ -32,6 +32,9 @@ final class ConnectionFactory
                     PDO::ATTR_STRINGIFY_FETCHES => false,
                 ],
             );
+            $connection->exec("SET time_zone = '+00:00'");
+
+            return $connection;
         } catch (PDOException $exception) {
             throw new DatabaseException('Unable to connect to MariaDB.', previous: $exception);
         }
