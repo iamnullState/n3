@@ -105,4 +105,4 @@ Unit tests validate configuration and migration definitions without a database. 
 
 Integration tests must never target staging or production data.
 
-Observed on 2026-09-01 against both MariaDB 11.8.9 and 12.3.2 with PHP 8.5.9: 165 tests, 531 assertions, 164 passed, and one environment-specific unit test was skipped because `pdo_mysql` was present.
+Observed after Phase 6C on 2026-09-01 against both MariaDB 11.8.9 and 12.3.2 with PHP 8.5.9: 175 tests, 603 assertions, 174 passed, and one environment-specific unit test was skipped because `pdo_mysql` was present. Phase 6C itself adds no database access or schema.

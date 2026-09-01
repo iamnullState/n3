@@ -1,6 +1,6 @@
 # Core Services, Events, and Modules
 
-Phase 5A introduced the executable module boundary. Phase 5B added deployment-state reconciliation and durable jobs. Phase 5C defined private resources and external transport contracts. Phase 5D added forward-only module migrations and recovery gates. Phase 6A uses those contracts for the opt-in `n3/analytics` module. All remain limited to trusted, deployment-installed PHP modules. Uploaded extensions, remote code, runtime installation, business APIs, webhook network delivery, and an application-managed daemon remain prohibited.
+Phase 5A introduced the executable module boundary. Phase 5B added deployment-state reconciliation and durable jobs. Phase 5C defined private resources and external transport contracts. Phase 5D added forward-only module migrations and recovery gates. Phase 6A uses those contracts for the opt-in `n3/analytics` module. Phase 6C adds a data-free local `stdio` MCP boundary. All remain limited to trusted, deployment-installed PHP modules. Uploaded extensions, remote code, runtime installation, business APIs, webhook network delivery, and an application-managed daemon remain prohibited.
 
 ## Trust boundary
 
@@ -123,6 +123,8 @@ Delivery becomes active only after all module listener registration is sealed. I
 `n3/core-probe` is an enabled, non-functional contract probe. It registers a private status service, marks itself booted, and observes `CoreStarted`. It adds no routes, database tables, files, UI, network calls, or user-facing behavior. Removing it from `config/modules.php` disables it cleanly.
 
 `n3/analytics` is disabled by default and enters the allowlist only when `ANALYTICS_ENABLED=true`. It registers a lazy Core request-metric sink, owns one hourly aggregate table through a module migration, and registers the private `/admin/analytics` route. Core, not the module, converts request paths into a controlled category so raw routes and identifiers never cross the metric boundary. Its dashboard authorizes through `CurrentPrincipalProvider`, which lazily validates the Identity session and exposes only `admin` or `member` authority—no account identifier. See [ANALYTICS.md](ANALYTICS.md).
+
+`n3/mcp-server` is disabled by default and enters the allowlist only when `MCP_ENABLED=true`. It registers a stateless local protocol server, has no migrations, routes, database connection, files, network transport, or background work, and exposes only a constant data-free status tool through an explicit CLI process. See [MCP.md](MCP.md).
 
 ## Jobs
 

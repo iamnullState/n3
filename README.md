@@ -15,7 +15,7 @@ The Secure Core Kernel milestone provides:
 - safe 404 and 500 views;
 - PHPUnit coverage for the request lifecycle, routing, escaping, and landing page.
 
-The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5 establishes trusted module boot, durable synchronization/jobs, private resource and transport contracts, and preview-first forward module migrations. Phase 6A adds the disabled-by-default, aggregate-only Analytics module; Phase 6B adds its private administrator report and development vitals. Only the data-free `/api/v1/system/ping` endpoint is enabled; API credentials and webhook network transport remain disabled.
+The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5 establishes trusted module boot, durable synchronization/jobs, private resource and transport contracts, and preview-first forward module migrations. Phase 6A adds the disabled-by-default, aggregate-only Analytics module; Phase 6B adds its private administrator report and development vitals. Phase 6C adds a disabled-by-default local `stdio` MCP server with one data-free status tool. Only the data-free `/api/v1/system/ping` endpoint is enabled over HTTP; API credentials, remote MCP, and webhook network transport remain disabled.
 
 ## Requirements
 
@@ -85,3 +85,4 @@ See `docs/JOBS.md` for durable payload, claim, lease, retry, dead-letter, and op
 See `docs/API.md` for the versioned JSON envelope, liveness route, and deferred authentication, pagination, rate-limit, and idempotency contracts.
 See `docs/WEBHOOKS.md` for signing, replay defense, endpoint restrictions, delivery retry classification, and deferred network boundaries.
 See `docs/ANALYTICS.md` for the opt-in aggregate metric boundary, module deployment, reporting, retention, and deferred tracking features.
+See `docs/MCP.md` for the local protocol, trust, tool, rate-limit, enablement, and deferred capability boundaries.

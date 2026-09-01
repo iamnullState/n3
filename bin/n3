@@ -15,12 +15,18 @@ use N3\Core\Database\TransactionManager;
 use N3\Core\Job\JobWorker;
 use N3\Core\Job\JobHandler;
 use N3\Core\Job\PdoJobQueue;
+use N3\Core\Event\EventDispatcher;
 use N3\Core\Module\ModuleGraph;
 use N3\Core\Module\ModuleLifecycleService;
+use N3\Core\Module\ModuleManager;
 use N3\Core\Module\ModuleMigrationRunner;
 use N3\Core\Module\PdoModuleLifecycleRepository;
 use N3\Module\Analytics\AnalyticsSchema;
 use N3\Module\Analytics\PdoAnalyticsRepository;
+use N3\Core\Service\ServiceRegistry;
+use N3\Module\McpServer\McpServer;
+use N3\Module\McpServer\McpServerModule;
+use N3\Module\McpServer\McpStdioServer;
 
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
@@ -45,12 +51,37 @@ if ($command === 'help') {
     fwrite(STDOUT, "  php bin/n3 jobs:retry --id=ID --force\n");
     fwrite(STDOUT, "  php bin/n3 analytics:summary [--days=7]\n");
     fwrite(STDOUT, "  php bin/n3 analytics:prune [--days=90] [--apply]\n");
+    fwrite(STDOUT, "  php bin/n3 mcp:serve --stdio\n");
     exit(0);
 }
 
 try {
     $app = require $root . '/config/app.php';
     date_default_timezone_set($app['timezone']);
+
+    if ($command === 'mcp:serve') {
+        if (!in_array('--stdio', $argv, true)) {
+            throw new RuntimeException('The MCP server requires the explicit --stdio transport option.');
+        }
+
+        $modules = (new ModuleGraph($app['version']))->ordered(require $root . '/config/modules.php');
+        $mcpModules = array_values(array_filter(
+            $modules,
+            static fn ($module): bool => $module->manifest()->id === McpServerModule::MODULE_ID,
+        ));
+        if (count($mcpModules) !== 1) {
+            throw new RuntimeException('MCP is disabled; set MCP_ENABLED=true and complete the reviewed module deployment workflow.');
+        }
+
+        $services = new ServiceRegistry();
+        (new ModuleManager($app['version'], $services, new EventDispatcher()))->boot($mcpModules);
+        $server = $services->get(McpServer::class);
+        if (!$server instanceof McpServer) {
+            throw new RuntimeException('The MCP module did not register its protocol server.');
+        }
+
+        exit((new McpStdioServer($server))->run(STDIN, STDOUT, STDERR));
+    }
 
     if ($command === 'analytics:summary' || $command === 'analytics:prune') {
         $modules = (new ModuleGraph($app['version']))->ordered(require $root . '/config/modules.php');
