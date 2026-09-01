@@ -6,6 +6,7 @@ namespace N3\Tests\Unit;
 
 use N3\App\Identity\AuthSessionManager;
 use N3\App\Identity\IdentityUser;
+use N3\App\Identity\IdentityPrincipalProvider;
 use N3\App\Identity\UserRepository;
 use N3\Core\Security\CsrfTokenManager;
 use N3\Core\Session\ArraySessionStore;
@@ -53,6 +54,20 @@ final class AuthSessionManagerTest extends TestCase
         $repository->user = new IdentityUser(7, 'Member', 'member@example.test', 'member@example.test', 'hash', 'active', 'member', true, 2);
 
         self::assertNull($manager->current());
+    }
+
+    public function testIdentityPrincipalExposesAuthorityWithoutAccountIdentifier(): void
+    {
+        $user = new IdentityUser(7, 'Member', 'member@example.test', 'member@example.test', 'hash', 'active', 'member', true, 1);
+        $repository = new SessionTestUserRepository($user);
+        $session = new ArraySessionStore();
+        $manager = new AuthSessionManager($session, new CsrfTokenManager($session), $repository, 1800, 43200);
+        $manager->login($user);
+
+        $principal = (new IdentityPrincipalProvider($manager))->current();
+        self::assertNotNull($principal);
+        self::assertSame('member', $principal->authority);
+        self::assertObjectNotHasProperty('id', $principal);
     }
 }
 

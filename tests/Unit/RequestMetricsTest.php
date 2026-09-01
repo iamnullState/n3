@@ -27,6 +27,7 @@ final class RequestMetricsTest extends TestCase
             '/login?email=person%40example.test' => 'identity',
             '/verify-email?token=private' => 'identity',
             '/admin/pages/184/edit' => 'admin.pages',
+            '/admin/analytics?days=90' => 'admin.analytics',
             '/api/v1/system/ping' => 'api.system',
             '/api/v1/users/person@example.test' => 'api.other',
             '/unknown/private-value' => 'other',

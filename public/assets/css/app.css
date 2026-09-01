@@ -346,6 +346,30 @@ a {
 
 .status-published { background: rgb(34 197 94 / 0.14); }
 .status-draft { background: rgb(245 158 11 / 0.14); }
+.analytics-page { width: min(76rem, calc(100% - 2rem)); }
+.site-header nav, .period-selector { display: flex; flex-wrap: wrap; gap: 1rem; }
+.period-selector { margin-block: 1rem 2rem; }
+.period-selector a { padding: 0.5rem 0.8rem; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; }
+.period-selector a[aria-current="page"] { background: var(--text); color: var(--background); }
+.report-window, .section-heading p, .vital-card > p:last-child, .budget-note { color: var(--muted); }
+.section-heading { margin-top: 3rem; }
+.section-heading h2 { margin-bottom: 0.25rem; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+.section-heading p { margin-top: 0; }
+.vitals-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.vital-card { padding: 1.25rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.vital-heading { display: flex; justify-content: space-between; align-items: start; gap: 1rem; }
+.vital-heading h3 { margin: 0; }
+.vital-status { padding: 0.15rem 0.5rem; border: 1px solid currentColor; border-radius: 999px; font-size: 0.76rem; font-weight: 800; }
+.vital-pass .vital-status { background: rgb(34 197 94 / 0.14); color: var(--text); }
+.vital-attention .vital-status { background: rgb(245 158 11 / 0.14); color: var(--text); }
+.vital-no-data .vital-status { color: var(--muted); }
+.vital-value { margin-block: 1.25rem 0.25rem; font-size: 1.8rem; font-weight: 850; letter-spacing: -0.03em; }
+.table-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+.analytics-table { width: 100%; border-collapse: collapse; background: var(--surface); }
+.analytics-table caption { padding: 1rem; text-align: left; font-weight: 800; }
+.analytics-table th, .analytics-table td { padding: 0.8rem 1rem; border-top: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.analytics-table th:first-child { text-align: left; }
+.analytics-table code { font: inherit; font-weight: 750; }
 .editor-page { width: min(58rem, calc(100% - 2rem)); }
 .editor-form textarea { width: 100%; resize: vertical; min-height: 5rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: 0.75rem; background: var(--background); color: var(--text); font: inherit; line-height: 1.55; }
 .editor-form input[aria-invalid="true"], .editor-form textarea[aria-invalid="true"] { border-color: #b42318; }
@@ -389,6 +413,11 @@ a {
     }
 
     .admin-heading .button { width: 100%; }
+    .vitals-grid { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 48.001rem) and (max-width: 70rem) {
+    .vitals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

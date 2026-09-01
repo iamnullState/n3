@@ -35,6 +35,10 @@ final class RequestMetricClassifier
             return 'admin.pages';
         }
 
+        if ($path === '/admin/analytics') {
+            return 'admin.analytics';
+        }
+
         if ($path === '/api/v1/system/ping') {
             return 'api.system';
         }

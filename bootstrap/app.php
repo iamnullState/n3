@@ -13,6 +13,8 @@ use N3\Core\Event\EventDispatcher;
 use N3\Core\Module\ModuleManager;
 use N3\Core\Module\ModuleLifecycleFailed;
 use N3\Core\Observability\RequestMetricsSink;
+use N3\Core\Security\CurrentPrincipalProvider;
+use N3\Core\Security\LazyCurrentPrincipalProvider;
 use N3\Core\Event\EventListenerFailed;
 use N3\Core\Service\ServiceRegistry;
 use N3\Core\View\View;
@@ -77,6 +79,12 @@ $services = new ServiceRegistry();
 $services->register(Router::class, $router);
 $services->register(View::class, $view);
 $services->register(FileLogger::class, $logger);
+$services->register(CurrentPrincipalProvider::class, new LazyCurrentPrincipalProvider(
+    static fn (): CurrentPrincipalProvider => IdentityKernel::principalProvider(
+        $root,
+        $config['environment'],
+    ),
+));
 $events = new EventDispatcher();
 $modules = require $root . '/config/modules.php';
 try {

@@ -81,13 +81,14 @@ final class AnalyticsRepositoryTest extends TestCase
         $repository->record(new RequestMetric($now, 'public.page', 'GET', 200, 1_000));
         $repository->record(new RequestMetric($now->modify('+10 minutes'), 'public.page', 'GET', 200, 3_000));
         $repository->record(new RequestMetric($now, 'identity', 'POST', 422, 9_000));
+        $repository->record(new RequestMetric($now, 'admin.analytics', 'GET', 503, 7_000));
         $repository->record(new RequestMetric($now->modify('-100 days'), 'other', 'GET', 404, 500));
 
         $rows = $this->runtimeConnection->query(sprintf(
             'SELECT * FROM `%s` ORDER BY bucket_start, route_category',
             AnalyticsSchema::hourlyMetricsTable(),
         ))->fetchAll();
-        self::assertCount(3, $rows);
+        self::assertCount(4, $rows);
         $page = array_values(array_filter($rows, static fn (array $row): bool => $row['route_category'] === 'public.page'))[0];
         self::assertSame(2, (int) $page['request_count']);
         self::assertSame(4_000, (int) $page['total_duration_us']);
@@ -111,11 +112,18 @@ final class AnalyticsRepositoryTest extends TestCase
         }
 
         $summary = $repository->summarize($now->modify('-7 days'));
-        self::assertCount(2, $summary);
+        self::assertCount(3, $summary);
         self::assertSame(2_000, array_values(array_filter(
             $summary,
             static fn ($row): bool => $row->routeCategory === 'public.page',
         ))[0]->averageDurationMicroseconds);
+
+        $report = $repository->report($now->modify('-7 days'), $now->modify('+1 hour'));
+        self::assertSame(4, $report->requestCount());
+        self::assertSame(1, $report->serverErrorCount());
+        self::assertSame(5_000, $report->averageDurationMicroseconds());
+        self::assertSame(9_000, $report->maximumDurationMicroseconds());
+        self::assertSame(['admin.analytics', 'identity', 'public.page'], array_column($report->routes, 'routeCategory'));
 
         self::assertSame(1, $repository->countBefore($now->modify('-90 days')));
         self::assertSame(1, $repository->pruneBefore($now->modify('-90 days')));
@@ -130,5 +138,9 @@ final class AnalyticsRepositoryTest extends TestCase
         ));
         $statement = $this->migrationConnection->prepare('DELETE FROM module_migrations WHERE module_id = :module_id');
         $statement->execute(['module_id' => AnalyticsSchema::MODULE_ID]);
+        $this->migrationConnection->prepare('DELETE FROM module_events WHERE module_id = :module_id')
+            ->execute(['module_id' => AnalyticsSchema::MODULE_ID]);
+        $this->migrationConnection->prepare('DELETE FROM modules WHERE module_id = :module_id')
+            ->execute(['module_id' => AnalyticsSchema::MODULE_ID]);
     }
 }

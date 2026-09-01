@@ -10,7 +10,7 @@ use N3\Core\Observability\RequestMetric;
 use N3\Core\Observability\RequestMetricsSink;
 use PDO;
 
-final readonly class PdoAnalyticsRepository implements RequestMetricsSink
+final readonly class PdoAnalyticsRepository implements RequestMetricsSink, AnalyticsReportReader
 {
     public function __construct(private PDO $connection)
     {
@@ -78,6 +78,52 @@ final readonly class PdoAnalyticsRepository implements RequestMetricsSink
         $statement->execute(['cutoff' => $this->bucketTimestamp($cutoff)]);
 
         return (int) $statement->fetchColumn();
+    }
+
+    public function report(DateTimeImmutable $since, DateTimeImmutable $until): AnalyticsReport
+    {
+        if ($since >= $until) {
+            throw new \InvalidArgumentException('Analytics report windows must have an increasing range.');
+        }
+
+        $parameters = [
+            'since' => $this->bucketTimestamp($since),
+            'until' => $this->bucketTimestamp($until),
+        ];
+        $categoryParameters = [];
+        foreach (RequestMetric::ROUTE_CATEGORIES as $index => $category) {
+            $key = 'category_' . $index;
+            $categoryParameters[] = ':' . $key;
+            $parameters[$key] = $category;
+        }
+
+        $statement = $this->connection->prepare(sprintf(
+            'SELECT route_category, '
+            . 'SUM(request_count) AS request_count, '
+            . 'SUM(CASE WHEN status_code BETWEEN 500 AND 599 THEN request_count ELSE 0 END) AS server_error_count, '
+            . 'SUM(total_duration_us) AS total_duration_us, '
+            . 'MAX(max_duration_us) AS maximum_duration_us '
+            . 'FROM `%s` WHERE bucket_start >= :since AND bucket_start < :until '
+            . 'AND route_category IN (%s) '
+            . 'GROUP BY route_category ORDER BY route_category LIMIT %d',
+            AnalyticsSchema::hourlyMetricsTable(),
+            implode(', ', $categoryParameters),
+            count(RequestMetric::ROUTE_CATEGORIES),
+        ));
+        $statement->execute($parameters);
+
+        $routes = array_map(
+            static fn (array $row): AnalyticsRouteReport => new AnalyticsRouteReport(
+                (string) $row['route_category'],
+                (int) $row['request_count'],
+                (int) $row['server_error_count'],
+                (int) $row['total_duration_us'],
+                (int) $row['maximum_duration_us'],
+            ),
+            $statement->fetchAll(),
+        );
+
+        return new AnalyticsReport($since, $until, $routes);
     }
 
     public function pruneBefore(DateTimeImmutable $cutoff): int

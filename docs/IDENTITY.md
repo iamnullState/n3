@@ -55,6 +55,8 @@ Sessions use PHP's native file handler under private `storage/sessions/`. Strict
 
 Each user has a `session_version`. A status or authority workflow must increment it. Password reset does so automatically, invalidating all previously authenticated sessions on their next request. The current authorities are fixed to `admin` and `member`; public forms never accept either authority or account status.
 
+Optional modules authorize through Core's lazy `CurrentPrincipalProvider`. Identity performs the normal active/verified/session-version checks and exposes only the fixed authority. The provider does not expose the account ID, display name, email, session identifier, or CSRF state to modules.
+
 ## Password recovery
 
 Reset tokens use the same 32-byte URL-safe generation and SHA-256-at-rest pattern as verification tokens. They expire after 30 minutes, are single-use, and all outstanding reset tokens are revoked after a successful reset. Request and completion attempts are rate-limited using HMAC-hashed subjects. The browser captures a raw bearer token into private session state and immediately redirects to a URL without the token.
