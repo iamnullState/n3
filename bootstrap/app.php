@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use N3\App\Controller\HomeController;
+use N3\App\Controller\ApiSystemController;
 use N3\App\Identity\IdentityKernel;
 use N3\App\Content\ContentKernel;
 use N3\Core\Application;
@@ -35,6 +36,7 @@ $view = new View($root . '/resources/views');
 $router = new Router();
 $logger = new FileLogger($root . '/storage/logs/app.log');
 $router->get('/', new HomeController($view, $config));
+$router->get('/api/v1/system/ping', [new ApiSystemController(), 'ping']);
 $identityController = null;
 $identity = static function () use (&$identityController, $root, $view, $config) {
     return $identityController ??= IdentityKernel::controller($root, $view, $config['environment']);

@@ -28,5 +28,6 @@ final class MigrationDefinitionTest extends TestCase
         yield 'authentication recovery' => [$path . '202608270003_create_authentication_recovery.php'];
         yield 'pages' => [$path . '202608300004_create_pages.php'];
         yield 'module lifecycle and jobs' => [$path . '202608300005_create_module_lifecycle_and_jobs.php'];
+        yield 'webhook receipts' => [$path . '202608310006_create_webhook_receipts.php'];
     }
 }

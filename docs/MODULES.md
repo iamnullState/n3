@@ -1,6 +1,6 @@
 # Core Services, Events, and Modules
 
-Phase 5A introduced the executable module boundary. Phase 5B adds deployment-state reconciliation and a durable job foundation. Both remain limited to trusted, deployment-installed PHP modules. Uploaded extensions, remote code, runtime installation, public APIs, webhooks, and an application-managed daemon remain prohibited.
+Phase 5A introduced the executable module boundary. Phase 5B added deployment-state reconciliation and a durable job foundation. Phase 5C defines private module resources and external transport contracts. All remain limited to trusted, deployment-installed PHP modules. Uploaded extensions, remote code, runtime installation, business APIs, webhook network delivery, and an application-managed daemon remain prohibited.
 
 ## Trust boundary
 
@@ -58,7 +58,19 @@ Migration `202608300005_create_module_lifecycle_and_jobs` adds `modules` and app
 
 This registry is deployment evidence, not a live extension marketplace. A deployment must take a backup, run Core migrations, preview synchronization, apply it, and confirm `module:status` before serving the new release. A failure rolls back registry DML as one transaction; it does not roll back deployed PHP files or MariaDB DDL.
 
-Module-owned migrations, destructive uninstall, skipped-version upgrade scripts, and per-module rollback remain deferred. Until a migration namespace and recovery contract are approved, all schema changes use the reviewed Core migration pipeline and modules must not run DDL during `register()` or `boot()`.
+`ModuleMigration` defines forward-only ownership metadata, but automatic module migration execution, destructive uninstall, skipped-version upgrade scripts, and per-module rollback remain deferred. All schema changes continue through the reviewed Core migration pipeline, and modules must not run DDL during `register()` or `boot()`.
+
+## Resource ownership
+
+Module IDs deterministically reserve three resource namespaces:
+
+- private files below `storage/modules/{vendor}/{name}/{data|config|cache}`;
+- configuration keys below `modules.{vendor}.{name}.`;
+- MariaDB table names beginning with a bounded `m_{readable_id}_{hash}_` prefix.
+
+`ScopedModuleStorage` accepts only validated relative segments, rejects traversal, backslashes, null bytes, symbolic-link ancestors and targets, bounds files to 1 MiB, writes through an atomic private temporary file, and requests `0700` directories plus `0600` files. The base directory must remain outside `public/`. These filesystem controls separate accidental ownership; trusted in-process PHP is not an operating-system sandbox and can still bypass Core if malicious.
+
+Core does not recursively delete a module namespace. Cache eviction, retained data, export, uninstall, migration recovery, quotas, and backup behavior require explicit future workflows. Module schema prefixes prevent naming collisions but do not provide MariaDB privilege isolation under the shared runtime account.
 
 ## Service registry
 
@@ -84,8 +96,8 @@ Phase 5B jobs are documented in [JOBS.md](JOBS.md). `config/jobs.php` is the rev
 
 ## Remaining Phase 5 boundaries
 
-- module-owned database migrations, destructive uninstall, storage/config namespaces, and finer database privileges;
+- automatic module-owned database migrations, destructive uninstall, quotas/retention, and finer database privileges;
 - worker supervision, heartbeat/lease renewal, hard process timeouts, job pruning, and retention policy;
-- public REST authentication, authorization, errors, pagination, rate limits, and idempotency;
-- inbound/outbound webhook signing, replay defense, retries, and delivery audit;
+- API credential issuance and durable API rate-limit/idempotency repositories before any business route;
+- inbound webhook routing and outbound delivery/audit after integration ownership and production controls are approved;
 - structured startup/event observability beyond controlled exception attribution.

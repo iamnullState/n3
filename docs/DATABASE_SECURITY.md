@@ -23,6 +23,7 @@ This document defines the security boundary for N3's PDO/MariaDB foundation. It 
 | Migration history | Tampering or drift | Restrict production access, retain checksums, and investigate any mismatch instead of overwriting history. |
 | Module registry | Unreviewed code activation or state drift | Keep configuration as the reviewed allowlist; preview/apply synchronization; reject downgrades and same-version manifest changes. |
 | Durable jobs | Duplicate side effects, payload disclosure, stale workers | Require idempotent handlers, bounded JSON, random leases, token-checked completion, sanitized errors, and explicit recovery. |
+| Webhook receipts | Signed-request replay or secret/body disclosure | Store only source-scoped delivery hashes, atomically reject duplicates, retain through the replay window, and never persist signatures, secrets, or bodies. |
 
 ## Credential roles
 
@@ -149,3 +150,5 @@ Identity security events store only controlled event/outcome codes, keyed subjec
 Page authoring is restricted to active verified administrators and all mutations require CSRF. Public queries select only published rows by an indexed, validated canonical slug. Page bodies remain plain text and are escaped at render time. Optimistic lock versions reject stale updates, and content audit events exclude page text. Published content must be unpublished before editing until a revision model is implemented.
 
 Module synchronization uses the runtime DML account only after the migration account creates the lifecycle tables. It never installs PHP code or executes DDL. Job payloads are private application data and must not contain secrets; job audit rows store controlled codes only. Lease tokens are random, compared in conditional updates, never printed by CLI commands, and cleared at transition. Production grants should eventually restrict modules through Core service contracts, but trusted in-process PHP cannot be database-sandboxed from other Core code under the current shared runtime account.
+
+Webhook replay receipts use a source-scoped composite primary key so concurrent duplicate deliveries cannot both succeed. Only a SHA-256 delivery-ID hash is stored. Receipt pruning must preserve the complete accepted replay window. API bearer and idempotency persistence are contracts only in Phase 5C: no credential issuance or business route is enabled, and plaintext bearer tokens must never be stored when that work begins.

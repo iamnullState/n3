@@ -9,6 +9,21 @@ use PHPUnit\Framework\TestCase;
 
 final class RequestTest extends TestCase
 {
+    public function testItProvidesNormalizedHeadersAndTheExactRawBody(): void
+    {
+        $request = Request::create(
+            'POST',
+            '/webhook',
+            server: ['HTTP_X_N3_WEBHOOK_ID' => 'delivery-1', 'CONTENT_TYPE' => 'application/json'],
+            rawBody: "{\"exact\": true}\n",
+        );
+
+        self::assertSame('delivery-1', $request->header('X-N3-Webhook-ID'));
+        self::assertSame('application/json', $request->header('Content-Type'));
+        self::assertSame("{\"exact\": true}\n", $request->rawBody());
+        self::assertSame("{\"exact\": true}\n", $request->withAttribute('checked', true)->rawBody());
+    }
+
     public function testItNormalizesMethodPathQueryAndTrailingSlash(): void
     {
         $request = Request::create('get', '/about/?source=test');

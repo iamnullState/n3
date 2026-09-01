@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace N3\Core;
 
+use N3\Core\Api\ApiRequestRejected;
+use N3\Core\Api\ApiResponder;
 use N3\Core\Http\Request;
 use N3\Core\Http\Response;
 use N3\Core\Http\MethodNotAllowed;
@@ -31,10 +33,23 @@ final readonly class Application
         try {
             $response = $this->router->dispatch($request);
         } catch (RouteNotFound) {
-            $response = $this->errorResponse('errors/404', 'Page not found', 404);
+            $response = $this->isApi($request)
+                ? ApiResponder::error('not_found', 'Resource not found.', $requestId, 404)
+                : $this->errorResponse('errors/404', 'Page not found', 404);
         } catch (MethodNotAllowed $exception) {
-            $response = $this->errorResponse('errors/404', 'Method not allowed', 405)
+            $response = ($this->isApi($request)
+                ? ApiResponder::error('method_not_allowed', 'Method not allowed.', $requestId, 405)
+                : $this->errorResponse('errors/404', 'Method not allowed', 405))
                 ->withHeader('Allow', implode(', ', $exception->allowed));
+        } catch (ApiRequestRejected $exception) {
+            $response = $this->isApi($request)
+                ? ApiResponder::error(
+                    $exception->errorCode,
+                    $exception->getMessage(),
+                    $requestId,
+                    $exception->status,
+                )
+                : $this->errorResponse('errors/500', 'Something went wrong', 500);
         } catch (Throwable $exception) {
             $this->logger->error('unhandled_exception', [
                 'request_id' => $requestId,
@@ -42,10 +57,17 @@ final readonly class Application
                 'environment' => $this->environment,
             ]);
 
-            $response = $this->errorResponse('errors/500', 'Something went wrong', 500);
+            $response = $this->isApi($request)
+                ? ApiResponder::error('internal_error', 'The request could not be completed.', $requestId, 500)
+                : $this->errorResponse('errors/500', 'Something went wrong', 500);
         }
 
         return $this->secure($response, $requestId);
+    }
+
+    private function isApi(Request $request): bool
+    {
+        return $request->path === '/api' || str_starts_with($request->path, '/api/');
     }
 
     private function errorResponse(string $view, string $title, int $status): Response

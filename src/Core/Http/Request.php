@@ -21,17 +21,21 @@ final readonly class Request
         private array $server = [],
         private array $cookies = [],
         private array $attributes = [],
+        private string $rawBody = '',
     ) {
     }
 
     public static function fromGlobals(): self
     {
+        $rawBody = file_get_contents('php://input');
+
         return self::create(
             (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'),
             (string) ($_SERVER['REQUEST_URI'] ?? '/'),
             $_POST,
             $_SERVER,
             $_COOKIE,
+            $rawBody === false ? '' : $rawBody,
         );
     }
 
@@ -46,6 +50,7 @@ final readonly class Request
         array $body = [],
         array $server = [],
         array $cookies = [],
+        string $rawBody = '',
     ): self
     {
         $path = parse_url($uri, PHP_URL_PATH);
@@ -63,7 +68,7 @@ final readonly class Request
             parse_str($queryString, $query);
         }
 
-        return new self(strtoupper($method), $normalizedPath, $query, $body, $server, $cookies);
+        return new self(strtoupper($method), $normalizedPath, $query, $body, $server, $cookies, rawBody: $rawBody);
     }
 
     public function input(string $key, mixed $default = null): mixed
@@ -88,6 +93,19 @@ final readonly class Request
         return filter_var($ip, FILTER_VALIDATE_IP) === false ? '0.0.0.0' : $ip;
     }
 
+    public function header(string $name, ?string $default = null): ?string
+    {
+        $key = strtoupper(str_replace('-', '_', trim($name)));
+        $value = $this->server['HTTP_' . $key] ?? $this->server[$key] ?? null;
+
+        return is_scalar($value) ? trim((string) $value) : $default;
+    }
+
+    public function rawBody(): string
+    {
+        return $this->rawBody;
+    }
+
     public function withAttribute(string $key, mixed $value): self
     {
         $attributes = $this->attributes;
@@ -101,6 +119,7 @@ final readonly class Request
             $this->server,
             $this->cookies,
             $attributes,
+            $this->rawBody,
         );
     }
 

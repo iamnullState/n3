@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace N3\Core\Http;
 
+use JsonException;
+
 final class Response
 {
     /**
@@ -19,6 +21,18 @@ final class Response
     public static function html(string $body, int $status = 200): self
     {
         return new self($body, $status, ['Content-Type' => 'text/html; charset=UTF-8']);
+    }
+
+    /** @param array<string, mixed> $body */
+    public static function json(array $body, int $status = 200): self
+    {
+        try {
+            $json = json_encode($body, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        } catch (JsonException $exception) {
+            throw new \InvalidArgumentException('JSON responses must contain encodable data.', previous: $exception);
+        }
+
+        return new self($json, $status, ['Content-Type' => 'application/json; charset=UTF-8']);
     }
 
     public static function redirect(string $location, int $status = 303): self
