@@ -43,6 +43,19 @@ final class ModuleResourceTest extends TestCase
         self::assertTrue($storage->exists('nested/settings.json'));
         self::assertSame(0600, fileperms($path) & 0777);
         self::assertSame([], glob(dirname($path) . '/.n3-*') ?: []);
+        self::assertTrue($storage->delete('nested/settings.json'));
+        self::assertFalse($storage->delete('nested/settings.json'));
+        self::assertFalse($storage->exists('nested/settings.json'));
+    }
+
+    public function testStorageSupportsAnExplicitBoundedMediaFileLimit(): void
+    {
+        $storage = new ScopedModuleStorage($this->temporaryRoot, 'vendor/example', 'data', 2 * 1024 * 1024);
+        $contents = str_repeat('x', 1024 * 1024 + 1);
+
+        $storage->put('large/image.webp', $contents);
+
+        self::assertSame($contents, $storage->read('large/image.webp'));
     }
 
     #[DataProvider('unsafePaths')]

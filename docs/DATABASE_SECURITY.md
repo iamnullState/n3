@@ -127,6 +127,8 @@ The PHPUnit suite verifies:
 - the runtime account cannot create, alter, drop, or index schema objects;
 - the runtime account cannot read MariaDB privilege tables;
 - account status and role are fixed by trusted repository code.
+- Media limits atomically count an HMAC-hashed IP subject and never persist the raw address;
+- Media catalog and audit tables omit raw uploads, filenames, source paths, metadata, request payloads, and client MIME claims.
 
 Run host unit tests and live MariaDB tests with:
 
@@ -159,3 +161,5 @@ Module migrations are trusted deployment code but execute only through `DB_MIGRA
 Phase 6A Analytics uses the shared runtime DML account for one atomic hourly-bucket upsert per request only when explicitly enabled. Core passes a controlled route category rather than a raw path; the table has no visitor, account, session, request, IP, user-agent, referrer, query, slug, cookie, or payload fields. Analytics failures are sanitized and fail-soft, so monitoring must detect lost metrics without making public request availability depend on reporting. Aggregate traffic data and CLI output remain private operational data and use a default 90-day retention target.
 
 Phase 6B reporting requires an active administrator session and receives only fixed authority from Core's lazy principal provider; Analytics receives no account ID or profile. Report periods and grouping are allowlisted, responses are `no-store`/`noindex`, and failures expose neither SQL nor exception messages. The report connection uses the runtime DML account and performs no DDL. Dashboard output remains sensitive operational data even though it contains no visitor-level records.
+
+Phase 7A Media uses the shared runtime DML account only after its reviewed forward migration. Upload attempts are counted before validation in fixed hourly buckets keyed by `HMAC-SHA-256(REMOTE_ADDR, SECURITY_HASH_KEY)`. Only controlled event keys and optional random asset IDs are audited. Raw source files are never inserted into MariaDB or retained on disk; accepted pixels are decoded and re-encoded before private storage. Catalog/file backups must be coordinated, and a missing half is a recoverable integrity incident rather than a reason for destructive rollback.

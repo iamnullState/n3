@@ -39,6 +39,10 @@ final class RequestMetricClassifier
             return 'admin.analytics';
         }
 
+        if ($path === '/admin/media' || str_starts_with($path, '/admin/media/')) {
+            return 'admin.media';
+        }
+
         if ($path === '/api/v1/system/ping') {
             return 'api.system';
         }

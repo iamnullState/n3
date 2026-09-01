@@ -12,6 +12,7 @@ final readonly class Request
      * @param array<string, scalar> $server
      * @param array<string, string> $cookies
      * @param array<string, mixed> $attributes
+     * @param array<string, UploadedFile> $files
      */
     private function __construct(
         public string $method,
@@ -22,6 +23,7 @@ final readonly class Request
         private array $cookies = [],
         private array $attributes = [],
         private string $rawBody = '',
+        private array $files = [],
     ) {
     }
 
@@ -36,6 +38,7 @@ final readonly class Request
             $_SERVER,
             $_COOKIE,
             $rawBody === false ? '' : $rawBody,
+            self::normalizeFiles($_FILES),
         );
     }
 
@@ -43,6 +46,7 @@ final readonly class Request
      * @param array<string, scalar|array|null> $body
      * @param array<string, scalar> $server
      * @param array<string, string> $cookies
+     * @param array<string, UploadedFile> $files
      */
     public static function create(
         string $method,
@@ -51,6 +55,7 @@ final readonly class Request
         array $server = [],
         array $cookies = [],
         string $rawBody = '',
+        array $files = [],
     ): self
     {
         $path = parse_url($uri, PHP_URL_PATH);
@@ -68,7 +73,7 @@ final readonly class Request
             parse_str($queryString, $query);
         }
 
-        return new self(strtoupper($method), $normalizedPath, $query, $body, $server, $cookies, rawBody: $rawBody);
+        return new self(strtoupper($method), $normalizedPath, $query, $body, $server, $cookies, rawBody: $rawBody, files: $files);
     }
 
     public function input(string $key, mixed $default = null): mixed
@@ -106,6 +111,11 @@ final readonly class Request
         return $this->rawBody;
     }
 
+    public function uploadedFile(string $key): ?UploadedFile
+    {
+        return $this->files[$key] ?? null;
+    }
+
     public function withAttribute(string $key, mixed $value): self
     {
         $attributes = $this->attributes;
@@ -120,6 +130,7 @@ final readonly class Request
             $this->cookies,
             $attributes,
             $this->rawBody,
+            $this->files,
         );
     }
 
@@ -135,5 +146,22 @@ final readonly class Request
         return is_array($parameters) && isset($parameters[$key]) && is_string($parameters[$key])
             ? $parameters[$key]
             : $default;
+    }
+
+    /** @param array<string, mixed> $files @return array<string, UploadedFile> */
+    private static function normalizeFiles(array $files): array
+    {
+        $normalized = [];
+        foreach ($files as $key => $file) {
+            if (!is_string($key) || !is_array($file)) {
+                continue;
+            }
+            $uploaded = UploadedFile::fromGlobal($file);
+            if ($uploaded !== null) {
+                $normalized[$key] = $uploaded;
+            }
+        }
+
+        return $normalized;
     }
 }

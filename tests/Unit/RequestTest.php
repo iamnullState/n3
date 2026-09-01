@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace N3\Tests\Unit;
 
 use N3\Core\Http\Request;
+use N3\Core\Http\UploadedFile;
 use PHPUnit\Framework\TestCase;
 
 final class RequestTest extends TestCase
@@ -57,5 +58,24 @@ final class RequestTest extends TestCase
         ]);
 
         self::assertSame('0.0.0.0', $request->clientIp());
+    }
+
+    public function testItKeepsUploadedFilesSeparateAndPreservesThemAcrossAttributes(): void
+    {
+        $file = new UploadedFile('/private/upload', UPLOAD_ERR_OK, 123);
+        $request = Request::create('POST', '/admin/media', files: ['image' => $file]);
+
+        self::assertSame($file, $request->uploadedFile('image'));
+        self::assertSame($file, $request->withAttribute('request_id', 'abc')->uploadedFile('image'));
+        self::assertNull($request->uploadedFile('missing'));
+    }
+
+    public function testNestedOrMalformedGlobalUploadShapesAreRejected(): void
+    {
+        self::assertNull(UploadedFile::fromGlobal([
+            'tmp_name' => ['/tmp/a'],
+            'error' => [UPLOAD_ERR_OK],
+            'size' => [10],
+        ]));
     }
 }

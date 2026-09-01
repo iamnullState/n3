@@ -28,6 +28,7 @@ final class RequestMetricsTest extends TestCase
             '/verify-email?token=private' => 'identity',
             '/admin/pages/184/edit' => 'admin.pages',
             '/admin/analytics?days=90' => 'admin.analytics',
+            '/admin/media/0123456789abcdef0123456789abcdef/preview?token=private' => 'admin.media',
             '/api/v1/system/ping' => 'api.system',
             '/api/v1/users/person@example.test' => 'api.other',
             '/unknown/private-value' => 'other',

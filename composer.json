@@ -13,6 +13,7 @@
         "phpunit/phpunit": "^13.0"
     },
     "suggest": {
+        "ext-gd": "Required when the optional Media module is enabled",
         "ext-pdo_mysql": "Required for MariaDB persistence and database integration tests"
     },
     "autoload": {

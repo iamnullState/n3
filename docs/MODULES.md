@@ -98,7 +98,7 @@ Module IDs deterministically reserve three resource namespaces:
 - configuration keys below `modules.{vendor}.{name}.`;
 - MariaDB table names beginning with a bounded `m_{readable_id}_{hash}_` prefix.
 
-`ScopedModuleStorage` accepts only validated relative segments, rejects traversal, backslashes, null bytes, symbolic-link ancestors and targets, bounds files to 1 MiB, writes through an atomic private temporary file, and requests `0700` directories plus `0600` files. The base directory must remain outside `public/`. These filesystem controls separate accidental ownership; trusted in-process PHP is not an operating-system sandbox and can still bypass Core if malicious.
+`ScopedModuleStorage` accepts only validated relative segments, rejects traversal, backslashes, null bytes, symbolic-link ancestors and targets, defaults to a 1 MiB file bound, permits an explicitly configured bound no higher than 24 MiB, writes through an atomic private temporary file, and requests `0700` directories plus `0600` files. Exact-file deletion is available for transactional compensation; recursive deletion is not. The base directory must remain outside `public/`. These filesystem controls separate accidental ownership; trusted in-process PHP is not an operating-system sandbox and can still bypass Core if malicious.
 
 Core does not recursively delete a module namespace. Cache eviction, retained data, export, uninstall, migration recovery, quotas, and backup behavior require explicit future workflows. Module schema prefixes prevent naming collisions but do not provide MariaDB privilege isolation under the shared runtime account.
 
@@ -125,6 +125,8 @@ Delivery becomes active only after all module listener registration is sealed. I
 `n3/analytics` is disabled by default and enters the allowlist only when `ANALYTICS_ENABLED=true`. It registers a lazy Core request-metric sink, owns one hourly aggregate table through a module migration, and registers the private `/admin/analytics` route. Core, not the module, converts request paths into a controlled category so raw routes and identifiers never cross the metric boundary. Its dashboard authorizes through `CurrentPrincipalProvider`, which lazily validates the Identity session and exposes only `admin` or `member` authority—no account identifier. See [ANALYTICS.md](ANALYTICS.md).
 
 `n3/mcp-server` is disabled by default and enters the allowlist only when `MCP_ENABLED=true`. It registers a stateless local protocol server, has no migrations, routes, database connection, files, network transport, or background work, and exposes only a constant data-free status tool through an explicit CLI process. See [MCP.md](MCP.md).
+
+`n3/media` is disabled by default and enters the allowlist only when `MEDIA_ENABLED=true`. It owns a private image catalog, HMAC-keyed upload limits, sanitized events, private master/preview storage, and administrator-only routes. It requires GD and always re-encodes accepted JPEG/PNG pixels to WebP; raw uploads and original filenames are not retained. See [MEDIA.md](MEDIA.md).
 
 ## Jobs
 

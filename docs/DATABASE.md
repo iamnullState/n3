@@ -81,6 +81,8 @@ Phase 6A's optional Analytics module owns a prefixed `hourly_metrics` table. Its
 
 Phase 6B changes no Analytics schema. Its administrator report uses one time-bounded query grouped by route category and reads completed hourly buckets only. The dashboard measures connection-plus-query duration transiently; it does not persist database telemetry or query text.
 
+Phase 7A's optional Media module owns prefixed asset, upload-limit, and event tables. Asset rows catalog only the random identifier, administrator label, sanitized dimensions, processed byte size, master checksum, and timestamp. Fixed-window rate subjects are HMAC-hashed before storage. Media tables do not store raw uploads, original filenames, client MIME claims, source paths, metadata, raw IP addresses, request payloads, or image bytes. See [MEDIA.md](MEDIA.md).
+
 Public registration must never accept `account_status` or `role_key` from the request. `PdoUserRepository::createPending()` fixes these values to `pending_verification` and `member`.
 
 ## Database accounts

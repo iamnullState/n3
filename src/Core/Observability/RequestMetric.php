@@ -16,6 +16,7 @@ final readonly class RequestMetric
         'identity',
         'admin.pages',
         'admin.analytics',
+        'admin.media',
         'api.system',
         'api.other',
         'other',

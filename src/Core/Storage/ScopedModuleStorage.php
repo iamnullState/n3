@@ -9,18 +9,27 @@ use RuntimeException;
 
 final class ScopedModuleStorage
 {
-    private const MAX_BYTES = 1048576;
+    private const DEFAULT_MAX_BYTES = 1_048_576;
+    private const ABSOLUTE_MAX_BYTES = 25_165_824;
 
     private readonly string $root;
     private readonly string $baseRoot;
 
-    public function __construct(string $baseRoot, string $moduleId, string $area = 'data')
+    public function __construct(
+        string $baseRoot,
+        string $moduleId,
+        string $area = 'data',
+        private readonly int $maximumBytes = self::DEFAULT_MAX_BYTES,
+    )
     {
         if (!str_starts_with($baseRoot, DIRECTORY_SEPARATOR)) {
             throw new \InvalidArgumentException('Module storage roots must be absolute paths.');
         }
         if (!in_array($area, ['cache', 'config', 'data'], true)) {
             throw new \InvalidArgumentException('Module storage areas must be cache, config, or data.');
+        }
+        if ($maximumBytes < 1 || $maximumBytes > self::ABSOLUTE_MAX_BYTES) {
+            throw new \InvalidArgumentException('Module runtime file limits must be between 1 byte and 24 MiB.');
         }
 
         [$vendor, $name] = ModuleResourcePolicy::segments($moduleId);
@@ -33,8 +42,8 @@ final class ScopedModuleStorage
 
     public function put(string $relativePath, string $contents): void
     {
-        if (strlen($contents) > self::MAX_BYTES) {
-            throw new RuntimeException('Module runtime files cannot exceed 1 MiB.');
+        if (strlen($contents) > $this->maximumBytes) {
+            throw new RuntimeException('Module runtime file exceeds its configured size limit.');
         }
 
         $path = $this->path($relativePath);
@@ -76,7 +85,7 @@ final class ScopedModuleStorage
             throw new RuntimeException('Module storage refuses non-regular files.');
         }
         $size = filesize($path);
-        if ($size === false || $size > self::MAX_BYTES) {
+        if ($size === false || $size > $this->maximumBytes) {
             throw new RuntimeException('Module runtime file size is invalid.');
         }
         $contents = file_get_contents($path);
@@ -90,6 +99,20 @@ final class ScopedModuleStorage
     public function exists(string $relativePath): bool
     {
         return $this->read($relativePath) !== null;
+    }
+
+    public function delete(string $relativePath): bool
+    {
+        $path = $this->path($relativePath);
+        if (!file_exists($path) && !is_link($path)) {
+            return false;
+        }
+        $this->assertNoLinks(dirname($path));
+        if (is_link($path) || !is_file($path)) {
+            throw new RuntimeException('Module storage refuses non-regular files.');
+        }
+
+        return unlink($path);
     }
 
     private function path(string $relativePath): string

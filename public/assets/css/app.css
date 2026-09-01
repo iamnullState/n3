@@ -381,6 +381,16 @@ a {
 .button-warning { border-color: #a15c00; background: #a15c00; }
 
 .public-page { width: min(48rem, calc(100% - 2rem)); }
+.media-page { width: min(76rem, calc(100% - 2rem)); }
+.media-upload { margin-bottom: 3rem; }
+.media-upload .editor-form { max-width: 42rem; }
+.media-upload input[type="file"] { width: 100%; padding: 0.75rem; border: 1px solid var(--line); border-radius: 0.75rem; background: var(--background); color: var(--text); font: inherit; }
+.media-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.media-card { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.media-card img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--surface-strong); }
+.media-card > div { padding: 1rem; }
+.media-card h3 { margin: 0; overflow-wrap: anywhere; }
+.media-card p { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.9rem; }
 .preview-banner { margin-bottom: 2rem; padding: 0.85rem 1rem; border: 1px solid var(--line); border-radius: 0.75rem; background: rgb(245 158 11 / 0.14); }
 .public-page-heading { padding-block: 3rem 2rem; border-bottom: 1px solid var(--line); }
 .page-excerpt { max-width: 42rem; font-size: 1.2rem; }
@@ -414,10 +424,12 @@ a {
 
     .admin-heading .button { width: 100%; }
     .vitals-grid { grid-template-columns: 1fr; }
+    .media-grid { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 48.001rem) and (max-width: 70rem) {
     .vitals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .media-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
