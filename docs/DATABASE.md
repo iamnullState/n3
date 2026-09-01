@@ -75,6 +75,8 @@ Phase 5B adds `modules`, `module_events`, `jobs`, and `job_events`. Module rows 
 
 Phase 5C adds `webhook_receipts`. It stores only a controlled source key, SHA-256 delivery-ID hash, receipt time, and expiry. A composite primary key makes replay consumption atomic; expired receipts are pruned by bounded maintenance. Webhook bodies, signatures, secrets, URLs, and raw delivery IDs are not stored. See [WEBHOOKS.md](WEBHOOKS.md).
 
+Phase 5D adds `module_migrations`. It records the owning module ID, lexical migration version, exact source-file checksum, and application time. Definitions run only through migration credentials, in module dependency order, under a database-scoped advisory lock. Applied history is retained when modules are disabled and cannot be dropped by the Core rollback command after records exist. See [MODULES.md](MODULES.md).
+
 Public registration must never accept `account_status` or `role_key` from the request. `PdoUserRepository::createPending()` fixes these values to `pending_verification` and `member`.
 
 ## Database accounts
@@ -99,4 +101,4 @@ Unit tests validate configuration and migration definitions without a database. 
 
 Integration tests must never target staging or production data.
 
-Observed on 2026-08-31 against both MariaDB 11.8.9 and 12.3.2 with PHP 8.5.9: 139 tests, 362 assertions, 138 passed, and one environment-specific unit test was skipped because `pdo_mysql` was present.
+Observed on 2026-08-31 against both MariaDB 11.8.9 and 12.3.2 with PHP 8.5.9: 153 tests, 395 assertions, 152 passed, and one environment-specific unit test was skipped because `pdo_mysql` was present.

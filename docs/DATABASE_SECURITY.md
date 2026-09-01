@@ -24,6 +24,7 @@ This document defines the security boundary for N3's PDO/MariaDB foundation. It 
 | Module registry | Unreviewed code activation or state drift | Keep configuration as the reviewed allowlist; preview/apply synchronization; reject downgrades and same-version manifest changes. |
 | Durable jobs | Duplicate side effects, payload disclosure, stale workers | Require idempotent handlers, bounded JSON, random leases, token-checked completion, sanitized errors, and explicit recovery. |
 | Webhook receipts | Signed-request replay or secret/body disclosure | Store only source-scoped delivery hashes, atomically reject duplicates, retain through the replay window, and never persist signatures, secrets, or bodies. |
+| Module migrations | Unreviewed DDL, history tampering, partial schema changes | Require trusted file-backed definitions, migration-only credentials, checksums, dependency ordering, advisory locking, explicit apply, backups, and forward repair. |
 
 ## Credential roles
 
@@ -152,3 +153,5 @@ Page authoring is restricted to active verified administrators and all mutations
 Module synchronization uses the runtime DML account only after the migration account creates the lifecycle tables. It never installs PHP code or executes DDL. Job payloads are private application data and must not contain secrets; job audit rows store controlled codes only. Lease tokens are random, compared in conditional updates, never printed by CLI commands, and cleared at transition. Production grants should eventually restrict modules through Core service contracts, but trusted in-process PHP cannot be database-sandboxed from other Core code under the current shared runtime account.
 
 Webhook replay receipts use a source-scoped composite primary key so concurrent duplicate deliveries cannot both succeed. Only a SHA-256 delivery-ID hash is stored. Receipt pruning must preserve the complete accepted replay window. API bearer and idempotency persistence are contracts only in Phase 5C: no credential issuance or business route is enabled, and plaintext bearer tokens must never be stored when that work begins.
+
+Module migrations are trusted deployment code but execute only through `DB_MIGRATION_USER`. The runtime account can read migration status for deployment drift checks but cannot execute module DDL. Source files are checksummed, pending migrations on an existing module require a forward manifest version, and applied history is retained. Because MariaDB DDL may commit implicitly, partial failure requires schema inspection and a reviewed forward repair; automatic rollback and manual checksum/history edits are prohibited.

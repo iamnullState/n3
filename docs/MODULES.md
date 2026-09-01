@@ -1,6 +1,6 @@
 # Core Services, Events, and Modules
 
-Phase 5A introduced the executable module boundary. Phase 5B added deployment-state reconciliation and a durable job foundation. Phase 5C defines private module resources and external transport contracts. All remain limited to trusted, deployment-installed PHP modules. Uploaded extensions, remote code, runtime installation, business APIs, webhook network delivery, and an application-managed daemon remain prohibited.
+Phase 5A introduced the executable module boundary. Phase 5B added deployment-state reconciliation and durable jobs. Phase 5C defined private resources and external transport contracts. Phase 5D adds forward-only module migrations and recovery gates. All remain limited to trusted, deployment-installed PHP modules. Uploaded extensions, remote code, runtime installation, business APIs, webhook network delivery, and an application-managed daemon remain prohibited.
 
 ## Trust boundary
 
@@ -56,9 +56,39 @@ Migration `202608300005_create_module_lifecycle_and_jobs` adds `modules` and app
 - Changing dependencies, conflicts, or compatibility without changing the module version fails closed through the manifest hash.
 - The complete manifest graph is validated before synchronization.
 
-This registry is deployment evidence, not a live extension marketplace. A deployment must take a backup, run Core migrations, preview synchronization, apply it, and confirm `module:status` before serving the new release. A failure rolls back registry DML as one transaction; it does not roll back deployed PHP files or MariaDB DDL.
+This registry is deployment evidence, not a live extension marketplace. Lifecycle DML remains transactional, but deployed PHP files and MariaDB DDL are not automatically rolled back.
 
-`ModuleMigration` defines forward-only ownership metadata, but automatic module migration execution, destructive uninstall, skipped-version upgrade scripts, and per-module rollback remain deferred. All schema changes continue through the reviewed Core migration pipeline, and modules must not run DDL during `register()` or `boot()`.
+## Module migrations
+
+A module that owns schema implements the optional `ModuleMigrationProvider` contract. Each returned `ModuleMigration` must:
+
+- be a named, readable, file-backed class within that module's source directory;
+- declare the exact owning module ID;
+- use a unique `YYYYMMDDHHMM_name` version;
+- implement only a forward `up()` operation;
+- create and alter only reviewed tables in the module's deterministic schema prefix.
+
+Core validates every definition before applying DDL. Enabled modules are processed in dependency order, with each module's migrations sorted lexically. The exact source file is SHA-256 checksummed and stored in `module_migrations` under the module ID plus migration version. Missing or modified applied source fails closed. Records remain when a module is disabled or removed, and the history table refuses destructive Core rollback once it contains records.
+
+An already synchronized module cannot add a pending migration without increasing its manifest version. New modules and forward module upgrades may apply pending migrations. The module migration runner uses only `DB_MIGRATION_USER`, takes a database-scoped advisory lock, and records completion only after `up()` returns. Modules must never run DDL from `register()`, `boot()`, HTTP, or job handlers.
+
+Deployment order is:
+
+```text
+take and verify backup
+        ↓
+run Core migrate
+        ↓
+preview module:migrate and module:sync
+        ↓
+apply module:migrate --apply
+        ↓
+apply module:sync --apply
+        ↓
+confirm both status commands are clean
+```
+
+MariaDB DDL may commit implicitly. If a migration fails after partially changing schema or succeeds before its history insert fails, stop deployment, inspect the schema and history, and create a reviewed forward repair. Do not retry blindly, edit checksums, mark history manually, or run destructive rollback. Automated down migrations, skipped-version scripts, and destructive uninstall remain prohibited.
 
 ## Resource ownership
 
@@ -96,7 +126,7 @@ Phase 5B jobs are documented in [JOBS.md](JOBS.md). `config/jobs.php` is the rev
 
 ## Remaining Phase 5 boundaries
 
-- automatic module-owned database migrations, destructive uninstall, quotas/retention, and finer database privileges;
+- destructive module uninstall, schema rollback, quotas/retention, and finer per-module database privileges;
 - worker supervision, heartbeat/lease renewal, hard process timeouts, job pruning, and retention policy;
 - API credential issuance and durable API rate-limit/idempotency repositories before any business route;
 - inbound webhook routing and outbound delivery/audit after integration ownership and production controls are approved;

@@ -15,7 +15,7 @@ The Secure Core Kernel milestone provides:
 - safe 404 and 500 views;
 - PHPUnit coverage for the request lifecycle, routing, escaping, and landing page.
 
-The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5A establishes trusted module boot contracts, Phase 5B adds durable module synchronization and jobs, and Phase 5C defines private module resources plus safe API/webhook transport contracts. Only the data-free `/api/v1/system/ping` endpoint is enabled; API credentials and webhook network transport remain disabled.
+The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5A establishes trusted module boot contracts, Phase 5B adds durable module synchronization and jobs, Phase 5C defines private resources and transport contracts, and Phase 5D adds preview-first forward module migrations. Only the data-free `/api/v1/system/ping` endpoint is enabled; API credentials and webhook network transport remain disabled.
 
 ## Requirements
 

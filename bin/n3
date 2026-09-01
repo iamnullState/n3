@@ -17,6 +17,7 @@ use N3\Core\Job\JobHandler;
 use N3\Core\Job\PdoJobQueue;
 use N3\Core\Module\ModuleGraph;
 use N3\Core\Module\ModuleLifecycleService;
+use N3\Core\Module\ModuleMigrationRunner;
 use N3\Core\Module\PdoModuleLifecycleRepository;
 
 $root = dirname(__DIR__);
@@ -34,6 +35,8 @@ if ($command === 'help') {
     fwrite(STDOUT, "  php bin/n3 admin:create --name=NAME --email=ADDRESS [--password-stdin]\n");
     fwrite(STDOUT, "  php bin/n3 module:status\n");
     fwrite(STDOUT, "  php bin/n3 module:sync [--apply]\n");
+    fwrite(STDOUT, "  php bin/n3 module:migrate:status\n");
+    fwrite(STDOUT, "  php bin/n3 module:migrate [--apply]\n");
     fwrite(STDOUT, "  php bin/n3 jobs:status\n");
     fwrite(STDOUT, "  php bin/n3 jobs:work --once\n");
     fwrite(STDOUT, "  php bin/n3 jobs:recover [--apply]\n");
@@ -45,10 +48,50 @@ try {
     $app = require $root . '/config/app.php';
     date_default_timezone_set($app['timezone']);
 
+    if ($command === 'module:migrate:status' || $command === 'module:migrate') {
+        $database = require $root . '/config/migrations.php';
+        $connection = (new ConnectionFactory())->create($database);
+        $modules = (new ModuleGraph($app['version']))->ordered(require $root . '/config/modules.php');
+        $runner = new ModuleMigrationRunner($connection, $modules);
+        $statuses = $runner->status();
+        $pending = array_values(array_filter($statuses, static fn ($status): bool => !$status->applied));
+
+        foreach ($statuses as $status) {
+            fwrite(STDOUT, sprintf(
+                "[%s] %s:%s\n",
+                $status->applied ? 'x' : ' ',
+                $status->moduleId,
+                $status->version,
+            ));
+        }
+        if ($pending === []) {
+            fwrite(STDOUT, "Module migrations are current.\n");
+            exit(0);
+        }
+        if ($command === 'module:migrate:status') {
+            exit(1);
+        }
+        if (!in_array('--apply', $argv, true)) {
+            fwrite(STDOUT, "Preview only; rerun with --apply after taking a backup.\n");
+            exit(1);
+        }
+
+        $completed = $runner->migrate();
+        fwrite(STDOUT, implode("\n", $completed) . "\n");
+        exit(0);
+    }
+
     if ($command === 'module:status' || $command === 'module:sync') {
         $runtime = require $root . '/config/database.php';
         $connection = (new ConnectionFactory())->create($runtime);
         $modules = (new ModuleGraph($app['version']))->ordered(require $root . '/config/modules.php');
+        $pendingMigrations = array_filter(
+            (new ModuleMigrationRunner($connection, $modules))->status(),
+            static fn ($status): bool => !$status->applied,
+        );
+        if ($pendingMigrations !== []) {
+            throw new RuntimeException('Module migrations are pending; run module:migrate before synchronizing lifecycle state.');
+        }
         $service = new ModuleLifecycleService(
             new PdoModuleLifecycleRepository($connection),
             new TransactionManager($connection),
