@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace N3\Core;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use N3\Core\Api\ApiRequestRejected;
 use N3\Core\Api\ApiResponder;
 use N3\Core\Http\Request;
@@ -12,6 +14,9 @@ use N3\Core\Http\MethodNotAllowed;
 use N3\Core\Http\RouteNotFound;
 use N3\Core\Http\Router;
 use N3\Core\Logging\FileLogger;
+use N3\Core\Observability\RequestMetric;
+use N3\Core\Observability\RequestMetricClassifier;
+use N3\Core\Observability\RequestMetricsSink;
 use N3\Core\View\View;
 use Throwable;
 
@@ -22,11 +27,14 @@ final readonly class Application
         private View $view,
         private FileLogger $logger,
         private string $environment,
+        private ?RequestMetricsSink $requestMetrics = null,
+        private RequestMetricClassifier $requestMetricClassifier = new RequestMetricClassifier(),
     ) {
     }
 
     public function handle(Request $request): Response
     {
+        $startedAt = hrtime(true);
         $requestId = bin2hex(random_bytes(8));
         $request = $request->withAttribute('request_id', $requestId);
 
@@ -62,7 +70,33 @@ final readonly class Application
                 : $this->errorResponse('errors/500', 'Something went wrong', 500);
         }
 
-        return $this->secure($response, $requestId);
+        $response = $this->secure($response, $requestId);
+        $this->recordRequestMetric($request, $response, $startedAt);
+
+        return $response;
+    }
+
+    private function recordRequestMetric(Request $request, Response $response, int $startedAt): void
+    {
+        if ($this->requestMetrics === null) {
+            return;
+        }
+
+        try {
+            $duration = max(0, intdiv(hrtime(true) - $startedAt, 1_000));
+            $this->requestMetrics->record(new RequestMetric(
+                new DateTimeImmutable('now', new DateTimeZone('UTC')),
+                $this->requestMetricClassifier->classify($request),
+                $request->method,
+                $response->status(),
+                min($duration, 60_000_000),
+            ));
+        } catch (Throwable $exception) {
+            $this->logger->error('request_metrics_failed', [
+                'exception' => $exception::class,
+                'environment' => $this->environment,
+            ]);
+        }
     }
 
     private function isApi(Request $request): bool

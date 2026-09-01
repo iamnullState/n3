@@ -12,6 +12,7 @@ use N3\Core\Logging\FileLogger;
 use N3\Core\Event\EventDispatcher;
 use N3\Core\Module\ModuleManager;
 use N3\Core\Module\ModuleLifecycleFailed;
+use N3\Core\Observability\RequestMetricsSink;
 use N3\Core\Event\EventListenerFailed;
 use N3\Core\Service\ServiceRegistry;
 use N3\Core\View\View;
@@ -88,9 +89,17 @@ try {
     throw $exception;
 }
 
+$requestMetrics = $services->has(RequestMetricsSink::class)
+    ? $services->get(RequestMetricsSink::class)
+    : null;
+if ($requestMetrics !== null && !$requestMetrics instanceof RequestMetricsSink) {
+    throw new LogicException('The request metrics service does not satisfy its declared contract.');
+}
+
 return new Application(
     router: $router,
     view: $view,
     logger: $logger,
     environment: $config['environment'],
+    requestMetrics: $requestMetrics,
 );

@@ -19,6 +19,8 @@ use N3\Core\Module\ModuleGraph;
 use N3\Core\Module\ModuleLifecycleService;
 use N3\Core\Module\ModuleMigrationRunner;
 use N3\Core\Module\PdoModuleLifecycleRepository;
+use N3\Module\Analytics\AnalyticsSchema;
+use N3\Module\Analytics\PdoAnalyticsRepository;
 
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
@@ -41,12 +43,75 @@ if ($command === 'help') {
     fwrite(STDOUT, "  php bin/n3 jobs:work --once\n");
     fwrite(STDOUT, "  php bin/n3 jobs:recover [--apply]\n");
     fwrite(STDOUT, "  php bin/n3 jobs:retry --id=ID --force\n");
+    fwrite(STDOUT, "  php bin/n3 analytics:summary [--days=7]\n");
+    fwrite(STDOUT, "  php bin/n3 analytics:prune [--days=90] [--apply]\n");
     exit(0);
 }
 
 try {
     $app = require $root . '/config/app.php';
     date_default_timezone_set($app['timezone']);
+
+    if ($command === 'analytics:summary' || $command === 'analytics:prune') {
+        $modules = (new ModuleGraph($app['version']))->ordered(require $root . '/config/modules.php');
+        $enabled = array_map(static fn ($module): string => $module->manifest()->id, $modules);
+        if (!in_array(AnalyticsSchema::MODULE_ID, $enabled, true)) {
+            throw new RuntimeException('Analytics is disabled; set ANALYTICS_ENABLED=true and complete the module deployment workflow.');
+        }
+
+        $defaultDays = $command === 'analytics:summary' ? 7 : 90;
+        $days = $defaultDays;
+        foreach ($argv as $argument) {
+            if (str_starts_with($argument, '--days=')) {
+                if (!preg_match('/^--days=([1-9][0-9]{0,2})$/D', $argument, $matches)) {
+                    throw new RuntimeException('--days must be a whole number between 1 and 365.');
+                }
+                $days = (int) $matches[1];
+            }
+        }
+        if ($days > 365) {
+            throw new RuntimeException('--days must be a whole number between 1 and 365.');
+        }
+
+        $runtime = require $root . '/config/database.php';
+        $repository = new PdoAnalyticsRepository((new ConnectionFactory())->create($runtime));
+        $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $cutoff = $now->modify(sprintf('-%d days', $days));
+
+        if ($command === 'analytics:summary') {
+            $rows = $repository->summarize($cutoff);
+            if ($rows === []) {
+                fwrite(STDOUT, sprintf("No aggregate metrics in the last %d day(s).\n", $days));
+                exit(0);
+            }
+            fwrite(STDOUT, "route_category method status requests average_us maximum_us\n");
+            foreach ($rows as $row) {
+                fwrite(STDOUT, sprintf(
+                    "%s %s %d %d %d %d\n",
+                    $row->routeCategory,
+                    $row->method,
+                    $row->statusCode,
+                    $row->requestCount,
+                    $row->averageDurationMicroseconds,
+                    $row->maximumDurationMicroseconds,
+                ));
+            }
+            exit(0);
+        }
+
+        $count = $repository->countBefore($cutoff);
+        if (!in_array('--apply', $argv, true)) {
+            fwrite(STDOUT, sprintf(
+                "rows=%d older_than_days=%d; preview only, rerun with --apply after confirming retention requirements.\n",
+                $count,
+                $days,
+            ));
+            exit($count > 0 ? 1 : 0);
+        }
+        $deleted = $repository->pruneBefore($cutoff);
+        fwrite(STDOUT, sprintf("Pruned %d aggregate metric row(s).\n", $deleted));
+        exit(0);
+    }
 
     if ($command === 'module:migrate:status' || $command === 'module:migrate') {
         $database = require $root . '/config/migrations.php';
