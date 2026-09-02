@@ -27,6 +27,68 @@ final readonly class MediaService
         return $this->repository->list(100);
     }
 
+    /** @return list<MediaLibraryItem> */
+    public function library(): array
+    {
+        $assets = $this->repository->list(100);
+        $usage = $this->repository->usages(array_map(static fn (MediaAsset $asset): string => $asset->publicId, $assets));
+        return array_map(
+            static fn (MediaAsset $asset): MediaLibraryItem => new MediaLibraryItem($asset, $usage[$asset->publicId] ?? new MediaUsage(0, 0)),
+            $assets,
+        );
+    }
+
+    public function regenerate(string $publicId): MediaLifecycleOutcome
+    {
+        $asset = $this->repository->find($publicId);
+        if ($asset === null) {
+            return new MediaLifecycleOutcome('missing');
+        }
+        $master = $this->masters->read(self::masterPath($publicId));
+        if ($master === null || !hash_equals($asset->sha256, hash('sha256', $master))) {
+            throw new \RuntimeException('The cataloged Media master failed its integrity check.');
+        }
+        $preview = $this->processor->regeneratePreview($master);
+        $this->previews->put(self::previewPath($publicId), $preview);
+        $this->repository->recordEvent('preview_regenerated', $publicId);
+
+        return new MediaLifecycleOutcome('regenerated');
+    }
+
+    public function delete(string $publicId): MediaLifecycleOutcome
+    {
+        $asset = $this->repository->find($publicId);
+        if ($asset === null) {
+            return new MediaLifecycleOutcome('missing');
+        }
+        if ($this->repository->usage($publicId)->attachments !== 0) {
+            return new MediaLifecycleOutcome('in_use');
+        }
+        $masterPath = self::masterPath($publicId);
+        $previewPath = self::previewPath($publicId);
+        $master = $this->masters->read($masterPath);
+        $preview = $this->previews->read($previewPath);
+        if ($master === null || $preview === null || !hash_equals($asset->sha256, hash('sha256', $master))) {
+            throw new \RuntimeException('Media deletion requires intact cataloged files.');
+        }
+
+        $this->masters->delete($masterPath);
+        try {
+            $this->previews->delete($previewPath);
+            if (!$this->repository->deleteIfUnused($publicId)) {
+                $this->masters->put($masterPath, $master);
+                $this->previews->put($previewPath, $preview);
+                return new MediaLifecycleOutcome('in_use');
+            }
+        } catch (Throwable $exception) {
+            $this->masters->put($masterPath, $master);
+            $this->previews->put($previewPath, $preview);
+            throw $exception;
+        }
+
+        return new MediaLifecycleOutcome('deleted');
+    }
+
     public function upload(string $label, ?UploadedFile $file, string $clientIp, ?int $now = null): MediaUploadOutcome
     {
         $now ??= time();

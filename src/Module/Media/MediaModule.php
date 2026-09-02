@@ -29,7 +29,7 @@ final class MediaModule implements Module, ModuleMigrationProvider
 {
     public function manifest(): ModuleManifest
     {
-        return new ModuleManifest(MediaSchema::MODULE_ID, '0.2.0', '^0.2');
+        return new ModuleManifest(MediaSchema::MODULE_ID, '0.3.0', '^0.2');
     }
 
     public function register(ServiceRegistry $services): void
@@ -80,6 +80,8 @@ final class MediaModule implements Module, ModuleMigrationProvider
         $router->get('/admin/media', [$controller, 'index']);
         $router->post('/admin/media', [$controller, 'upload']);
         $router->get('/admin/media/{id}/preview', [$controller, 'preview']);
+        $router->post('/admin/media/{id}/regenerate', [$controller, 'regenerate']);
+        $router->post('/admin/media/{id}/delete', [$controller, 'delete']);
         $router->get('/media/{id}.webp', [$publicMedia, 'show']);
     }
 

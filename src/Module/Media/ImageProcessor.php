@@ -10,4 +10,7 @@ interface ImageProcessor
 {
     /** @throws MediaUploadRejected */
     public function process(UploadedFile $file): ProcessedImage;
+
+    /** @throws MediaUploadRejected */
+    public function regeneratePreview(string $master): string;
 }

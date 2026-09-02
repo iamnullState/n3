@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-use N3\Module\Media\MediaAsset;
+use N3\Module\Media\MediaLibraryItem;
 
 $assets = is_array($viewData['assets'] ?? null) ? $viewData['assets'] : [];
+$items = is_array($viewData['items'] ?? null) ? $viewData['items'] : [];
+$lifecycleCsrf = is_array($viewData['lifecycleCsrf'] ?? null) ? $viewData['lifecycleCsrf'] : [];
 $errors = is_array($viewData['errors'] ?? null) ? $viewData['errors'] : [];
 $values = is_array($viewData['values'] ?? null) ? $viewData['values'] : ['label' => ''];
 $flash = is_array($viewData['flash'] ?? null) ? $viewData['flash'] : null;
@@ -33,8 +35,8 @@ $csrf = (string) ($viewData['csrf'] ?? '');
             <div class="empty-state" role="status"><h3>No images yet</h3><p>Add the first image to validate the private Media workflow.</p></div>
         <?php else: ?>
             <div class="media-grid">
-                <?php foreach ($assets as $asset): if (!$asset instanceof MediaAsset) { continue; } ?>
-                    <article class="media-card"><img src="/admin/media/<?= $escape($asset->publicId) ?>/preview" alt="" width="480" height="480" loading="lazy"><div><h3><?= $escape($asset->label) ?></h3><p><?= $escape($asset->width) ?> × <?= $escape($asset->height) ?> pixels · <?= $escape(number_format($asset->byteSize / 1024, 1)) ?> KiB</p><p>Added <time datetime="<?= $escape($asset->createdAt->format(DATE_ATOM)) ?>"><?= $escape($asset->createdAt->format('M j, Y H:i')) ?> UTC</time></p></div></article>
+                <?php foreach ($items as $item): if (!$item instanceof MediaLibraryItem) { continue; } $asset = $item->asset; $tokens = $lifecycleCsrf[$asset->publicId] ?? []; ?>
+                    <article class="media-card"><img src="/admin/media/<?= $escape($asset->publicId) ?>/preview" alt="" width="480" height="480" loading="lazy"><div><h3><?= $escape($asset->label) ?></h3><p><?= $escape($asset->width) ?> × <?= $escape($asset->height) ?> pixels · <?= $escape(number_format($asset->byteSize / 1024, 1)) ?> KiB</p><p>Added <time datetime="<?= $escape($asset->createdAt->format(DATE_ATOM)) ?>"><?= $escape($asset->createdAt->format('M j, Y H:i')) ?> UTC</time></p><p><strong><?= $escape($item->usage->attachments) ?> Page attachment<?= $item->usage->attachments === 1 ? '' : 's' ?></strong><?php if ($item->usage->publishedAttachments > 0): ?> · <?= $escape($item->usage->publishedAttachments) ?> published<?php endif; ?></p><div class="media-actions"><form method="post" action="/admin/media/<?= $escape($asset->publicId) ?>/regenerate"><input type="hidden" name="_csrf" value="<?= $escape($tokens['regenerate'] ?? '') ?>"><button class="button button-secondary" type="submit">Regenerate preview</button></form><form method="post" action="/admin/media/<?= $escape($asset->publicId) ?>/delete"><input type="hidden" name="_csrf" value="<?= $escape($tokens['delete'] ?? '') ?>"><button class="button button-warning" type="submit"<?= $item->usage->attachments > 0 ? ' disabled aria-describedby="usage-' . $escape($asset->publicId) . '"' : '' ?>>Delete unused image</button><?php if ($item->usage->attachments > 0): ?><span class="visually-hidden" id="usage-<?= $escape($asset->publicId) ?>">Deletion is unavailable while this image is attached.</span><?php endif; ?></form></div></div></article>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>

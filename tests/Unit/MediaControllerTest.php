@@ -63,6 +63,7 @@ final class MediaControllerTest extends TestCase
         $repository->assets[str_repeat('a', 32)] = new MediaAsset(
             str_repeat('a', 32), '<img src=x onerror=alert(1)>', 10, 10, 100, str_repeat('b', 64), new DateTimeImmutable('2026-09-01T12:00:00Z'),
         );
+        $repository->usageById[str_repeat('a', 32)] = new \N3\Module\Media\MediaUsage(2, 1);
         [$controller] = $this->controller(new CurrentPrincipal('admin'), $repository);
 
         $response = $controller->index(Request::create('GET', '/admin/media'));
@@ -71,6 +72,9 @@ final class MediaControllerTest extends TestCase
         self::assertSame('noindex, nofollow', $response->headers()['X-Robots-Tag']);
         self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $response->body());
         self::assertStringNotContainsString('<img src=x onerror=alert(1)>', $response->body());
+        self::assertStringContainsString('2 Page attachments', $response->body());
+        self::assertStringContainsString('1 published', $response->body());
+        self::assertStringContainsString('disabled aria-describedby=', $response->body());
     }
 
     public function testUploadRequiresCsrfAndSuccessfulPreviewRemainsAuthenticatedAndPrivate(): void
@@ -97,6 +101,19 @@ final class MediaControllerTest extends TestCase
         self::assertSame(200, $preview->status());
         self::assertSame('image/webp', $preview->headers()['Content-Type']);
         self::assertSame('private, max-age=300', $preview->headers()['Cache-Control']);
+
+        $route = ['id' => $id];
+        $invalidLifecycle = $controller->regenerate(Request::create('POST', '/admin/media/' . $id . '/regenerate', ['_csrf' => 'wrong'])->withAttribute('route_parameters', $route));
+        self::assertSame(419, $invalidLifecycle->status());
+        $regenerated = $controller->regenerate(Request::create('POST', '/admin/media/' . $id . '/regenerate', [
+            '_csrf' => $csrf->token('media_regenerate:' . $id),
+        ])->withAttribute('route_parameters', $route));
+        self::assertSame(303, $regenerated->status());
+        $deleted = $controller->delete(Request::create('POST', '/admin/media/' . $id . '/delete', [
+            '_csrf' => $csrf->token('media_delete:' . $id),
+        ])->withAttribute('route_parameters', $route));
+        self::assertSame(303, $deleted->status());
+        self::assertNull($repository->find($id));
 
         [$anonymous] = $this->controller(null, $repository);
         self::assertSame(303, $anonymous->preview(Request::create('GET', '/admin/media/' . $id . '/preview')->withAttribute('route_parameters', ['id' => $id]))->status());
@@ -137,15 +154,21 @@ final class ControllerImageProcessor implements ImageProcessor
     public const MASTER = "RIFF\x04\x00\x00\x00WEBPmaster";
     public const PREVIEW = "RIFF\x04\x00\x00\x00WEBPpreview";
     public function process(UploadedFile $file): ProcessedImage { return new ProcessedImage(self::MASTER, self::PREVIEW, 16, 12); }
+    public function regeneratePreview(string $master): string { return self::PREVIEW; }
 }
 
 final class ControllerMediaRepository implements MediaRepository
 {
     /** @var array<string, MediaAsset> */
     public array $assets = [];
+    /** @var array<string, \N3\Module\Media\MediaUsage> */
+    public array $usageById = [];
     public function list(int $limit): array { return array_slice(array_values($this->assets), 0, $limit); }
     public function find(string $publicId): ?MediaAsset { return $this->assets[$publicId] ?? null; }
     public function create(MediaAsset $asset): void { $this->assets[$asset->publicId] = $asset; }
+    public function usage(string $publicId): \N3\Module\Media\MediaUsage { return $this->usageById[$publicId] ?? new \N3\Module\Media\MediaUsage(0, 0); }
+    public function usages(array $publicIds): array { $result = []; foreach ($publicIds as $id) { $result[$id] = $this->usage($id); } return $result; }
+    public function deleteIfUnused(string $publicId): bool { if (!isset($this->assets[$publicId])) { return false; } unset($this->assets[$publicId]); return true; }
     public function allowUpload(string $subject, int $now, int $limit): bool { return true; }
     public function recordEvent(string $eventKey, ?string $assetPublicId = null): void {}
 }

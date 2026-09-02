@@ -105,6 +105,52 @@ final readonly class MediaController
         }
     }
 
+    public function regenerate(Request $request): Response
+    {
+        return $this->lifecycle($request, 'regenerate');
+    }
+
+    public function delete(Request $request): Response
+    {
+        return $this->lifecycle($request, 'delete');
+    }
+
+    private function lifecycle(Request $request, string $operation): Response
+    {
+        $authorization = $this->authorize();
+        if ($authorization !== null) {
+            return $authorization;
+        }
+        $publicId = $request->routeParameter('id', '');
+        if (!is_string($publicId) || !preg_match('/^[a-f0-9]{32}$/D', $publicId)) {
+            return $this->notFound();
+        }
+        if (!$this->csrf->verify('media_' . $operation . ':' . $publicId, $request->input('_csrf'))) {
+            return $this->renderLibrary(['form' => 'Your Media action expired. Refresh and try again.'], ['label' => ''], 419);
+        }
+
+        try {
+            $outcome = $operation === 'delete' ? $this->media->delete($publicId) : $this->media->regenerate($publicId);
+            if ($outcome->status === 'missing') {
+                return $this->notFound();
+            }
+            if ($outcome->status === 'in_use') {
+                return $this->renderLibrary(
+                    ['form' => 'This image is attached to content. Detach it from every Page before deletion.'],
+                    ['label' => ''],
+                    409,
+                );
+            }
+            $this->flash->set('success', $operation === 'delete'
+                ? 'Unused image deleted from the catalog and private storage.'
+                : 'Preview regenerated from the verified private master.');
+
+            return $this->private(Response::redirect('/admin/media'));
+        } catch (Throwable $exception) {
+            return $this->unavailable($exception, 'media_' . $operation . '_failed');
+        }
+    }
+
     /** @param array<string, string> $errors @param array{label: string} $values @param array{type: string, message: string}|null $flash */
     private function renderLibrary(array $errors, array $values, int $status, ?array $flash = null): Response
     {
@@ -112,10 +158,19 @@ final readonly class MediaController
             'pageTitle' => 'Media — N3',
             'metaDescription' => 'Private N3 image library.',
             'robots' => 'noindex,nofollow',
-            'assets' => $this->media->list(),
+            'items' => $items = $this->media->library(),
+            'assets' => array_map(static fn (MediaLibraryItem $item): MediaAsset => $item->asset, $items),
             'errors' => $errors,
             'values' => $values,
             'csrf' => $this->csrf->token('media_upload'),
+            'lifecycleCsrf' => array_reduce($items, function (array $tokens, MediaLibraryItem $item): array {
+                $id = $item->asset->publicId;
+                $tokens[$id] = [
+                    'regenerate' => $this->csrf->token('media_regenerate:' . $id),
+                    'delete' => $this->csrf->token('media_delete:' . $id),
+                ];
+                return $tokens;
+            }, []),
             'flash' => $flash,
         ]), $status));
     }

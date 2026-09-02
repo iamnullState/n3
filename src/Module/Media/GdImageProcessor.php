@@ -114,6 +114,50 @@ final readonly class GdImageProcessor implements ImageProcessor
         return new ProcessedImage($master, $preview, $width, $height);
     }
 
+    public function regeneratePreview(string $master): string
+    {
+        if ($master === '' || strlen($master) > $this->config->maximumProcessedBytes) {
+            throw new MediaUploadRejected('master_invalid', 'The sanitized master cannot be regenerated safely.');
+        }
+        try {
+            $image = imagecreatefromstring($master);
+        } catch (Throwable) {
+            $image = false;
+        }
+        if ($image === false) {
+            throw new MediaUploadRejected('master_invalid', 'The sanitized master cannot be regenerated safely.');
+        }
+
+        try {
+            $width = imagesx($image);
+            $height = imagesy($image);
+            if ($width < 1 || $height < 1 || $width > $this->config->maximumDimension
+                || $height > $this->config->maximumDimension || $width * $height > $this->config->maximumPixels) {
+                throw new \RuntimeException('Sanitized master dimensions are invalid.');
+            }
+            $scale = min(1, $this->config->previewMaximumDimension / max($width, $height));
+            $previewWidth = max(1, (int) round($width * $scale));
+            $previewHeight = max(1, (int) round($height * $scale));
+            $previewImage = imagecreatetruecolor($previewWidth, $previewHeight);
+            if ($previewImage === false) {
+                throw new \RuntimeException('Unable to allocate the Media preview image.');
+            }
+            imagealphablending($previewImage, false);
+            imagesavealpha($previewImage, true);
+            if (!imagecopyresampled($previewImage, $image, 0, 0, 0, 0, $previewWidth, $previewHeight, $width, $height)) {
+                throw new \RuntimeException('Unable to resize the Media preview image.');
+            }
+            $preview = $this->encode($previewImage, $this->config->previewWebpQuality);
+        } catch (Throwable) {
+            throw new MediaUploadRejected('regeneration_failed', 'The sanitized master cannot be regenerated safely.');
+        }
+        if (strlen($preview) > 1_048_576) {
+            throw new MediaUploadRejected('processed_size', 'The regenerated preview exceeds its storage limit.');
+        }
+
+        return $preview;
+    }
+
     private function encode(object $image, int $quality): string
     {
         $contents = null;

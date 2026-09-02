@@ -20,6 +20,9 @@ final class LazyMediaRepository implements MediaRepository
     public function list(int $limit): array { return $this->repository()->list($limit); }
     public function find(string $publicId): ?MediaAsset { return $this->repository()->find($publicId); }
     public function create(MediaAsset $asset): void { $this->repository()->create($asset); }
+    public function usage(string $publicId): MediaUsage { return $this->repository()->usage($publicId); }
+    public function usages(array $publicIds): array { return $this->repository()->usages($publicIds); }
+    public function deleteIfUnused(string $publicId): bool { return $this->repository()->deleteIfUnused($publicId); }
     public function allowUpload(string $subject, int $now, int $limit): bool { return $this->repository()->allowUpload($subject, $now, $limit); }
     public function recordEvent(string $eventKey, ?string $assetPublicId = null): void { $this->repository()->recordEvent($eventKey, $assetPublicId); }
 

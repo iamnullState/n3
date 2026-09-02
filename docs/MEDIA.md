@@ -1,6 +1,6 @@
 # Private Media Library
 
-Phase 7A adds `n3/media`, a disabled-by-default administrator image-ingestion module. Phase 7B adds one optional Page lead-image relationship and controlled delivery of the sanitized preview derivative. Private masters never become web-addressable.
+Phase 7A adds `n3/media`, a disabled-by-default administrator image-ingestion module. Phase 7B adds one optional Page lead-image relationship and controlled delivery of the sanitized preview derivative. Phase 7C adds usage counts, checksum-verified preview regeneration, and unused-only deletion. Private masters never become web-addressable.
 
 ## Enablement and deployment
 
@@ -39,7 +39,7 @@ The forward-only module migrations own four prefixed tables:
 - events: controlled event key, optional random asset ID, and occurrence timestamp.
 - Page attachments: one Page ID, one random asset ID, required alternative text, and relationship timestamps.
 
-The upload limit defaults to 20 attempts per trusted `REMOTE_ADDR` per hour. Forwarded headers remain untrusted. IP addresses are HMAC-hashed with `SECURITY_HASH_KEY` before persistence. Audit keys are limited to `upload_succeeded`, `upload_rejected`, and `upload_rate_limited`. Raw IPs, original filenames, source paths, request payloads, image metadata, and source bytes are not stored or logged.
+The upload limit defaults to 20 attempts per trusted `REMOTE_ADDR` per hour. Forwarded headers remain untrusted. IP addresses are HMAC-hashed with `SECURITY_HASH_KEY` before persistence. Audit keys are limited to `upload_succeeded`, `upload_rejected`, `upload_rate_limited`, `preview_regenerated`, and `asset_deleted`. Raw IPs, original filenames, source paths, request payloads, image metadata, and source bytes are not stored or logged.
 
 Attachment changes use the Page lock version, are restricted to drafts, increment that lock, attribute the administrator through `updated_by`, and append controlled `media_attached`/`media_detached` content events. Alternative text is validated as 2–300 UTF-8 characters without controls and escaped at render time. Blank decorative alternatives, captions, and HTML are not accepted in this slice.
 
@@ -59,9 +59,13 @@ Attachment changes use the Page lock version, are restricted to drafts, incremen
 
 PHP/web-server request limits must allow the configured raw upload size. Keep `post_max_size` above `upload_max_filesize`, but do not use those settings as the application’s only size control.
 
+## Lifecycle operations
+
+The private library shows total and published Page attachment counts. Asset-specific, CSRF-protected administrator actions can rebuild a preview only after the private master's stored SHA-256 is verified, or delete an asset only when it has zero attachments. Deletion rechecks usage under a database lock and retains the foreign key as the final race-safe guard. If catalog deletion fails after file removal, N3 restores the exact private files.
+
 ## Backup and recovery
 
-Back up the MariaDB catalog/attachments and `storage/modules/n3/media/data/` together from the same maintenance window. The cache previews are reproducible in principle but no regeneration command exists yet, so include them in operational backups. A database row without its corresponding private file returns a controlled 503 and records only an exception class in the application log. A file without a catalog and published attachment is not addressable through the public route.
+Back up the MariaDB catalog/attachments and `storage/modules/n3/media/data/` together from the same maintenance window. Cache previews can be regenerated from checksum-verified private masters in the administrator library, but include them in operational backups. A database row without its corresponding private file returns a controlled 503 and records only an exception class in the application log. A file without a catalog and published attachment is not addressable through the public route.
 
 Public delivery is disclosure, not access-controlled secrecy. Unpublishing or detaching stops new origin responses, but five-minute caches and copies already downloaded by browsers, proxies, crawlers, or users cannot be revoked. Never attach an image that must remain confidential.
 
@@ -69,4 +73,4 @@ Do not edit applied migration source, delete module history, or destructively ro
 
 ## Deferred work
 
-Deletion/replacement of library assets, larger/responsive renditions, derivative regeneration, quotas and retention, bulk upload, cropping/focal points, captions, galleries, inline rich-text media, SVG/GIF/AVIF, video, signed URLs, CDN behavior, and externally backed object storage remain deferred. Each requires a separate authorization, lifecycle, privacy, and recovery contract.
+Replacement, larger/responsive renditions, quotas and retention automation, bulk actions, cropping/focal points, captions, galleries, inline rich-text media, SVG/GIF/AVIF, video, signed URLs, CDN behavior, and externally backed object storage remain deferred. Each requires a separate authorization, lifecycle, privacy, and recovery contract.

@@ -101,6 +101,39 @@ final class MediaServiceTest extends TestCase
         self::assertSame(hash('sha256', FakeImageProcessor::PREVIEW), $preview->etag);
     }
 
+    public function testRegenerationVerifiesMasterAndReplacesPreview(): void
+    {
+        $repository = new InMemoryMediaRepository();
+        $service = $this->service($repository);
+        $outcome = $service->upload('Preview image', $this->sourceFile('bytes'), '192.0.2.8', 1_788_278_400);
+        $id = $outcome->asset?->publicId ?? '';
+
+        self::assertSame('regenerated', $service->regenerate($id)->status);
+        self::assertSame(FakeImageProcessor::REGENERATED, $this->previews()->read(MediaService::previewPath($id)));
+        self::assertContains('preview_regenerated', $repository->events);
+
+        $this->masters()->put(MediaService::masterPath($id), 'tampered');
+        $this->expectException(RuntimeException::class);
+        $service->regenerate($id);
+    }
+
+    public function testDeletionRequiresNoUsageAndRemovesCatalogAndFiles(): void
+    {
+        $repository = new InMemoryMediaRepository();
+        $service = $this->service($repository);
+        $outcome = $service->upload('Delete image', $this->sourceFile('bytes'), '192.0.2.8', 1_788_278_400);
+        $id = $outcome->asset?->publicId ?? '';
+        $repository->usages[$id] = new \N3\Module\Media\MediaUsage(1, 1);
+        self::assertSame('in_use', $service->delete($id)->status);
+        self::assertNotNull($repository->find($id));
+
+        $repository->usages[$id] = new \N3\Module\Media\MediaUsage(0, 0);
+        self::assertSame('deleted', $service->delete($id)->status);
+        self::assertNull($repository->find($id));
+        self::assertNull($this->masters()->read(MediaService::masterPath($id)));
+        self::assertNull($this->previews()->read(MediaService::previewPath($id)));
+    }
+
     private function service(InMemoryMediaRepository $repository): MediaService
     {
         return new MediaService($repository, new FakeImageProcessor(), $this->masters(), $this->previews(), $this->config());
@@ -150,11 +183,13 @@ final class FakeImageProcessor implements ImageProcessor
 {
     public const MASTER = "RIFF\x04\x00\x00\x00WEBPmaster";
     public const PREVIEW = "RIFF\x04\x00\x00\x00WEBPpreview";
+    public const REGENERATED = "RIFF\x04\x00\x00\x00WEBPregenerated";
 
     public function process(UploadedFile $file): ProcessedImage
     {
         return new ProcessedImage(self::MASTER, self::PREVIEW, 640, 480);
     }
+    public function regeneratePreview(string $master): string { return self::REGENERATED; }
 }
 
 final class InMemoryMediaRepository implements MediaRepository
@@ -167,6 +202,8 @@ final class InMemoryMediaRepository implements MediaRepository
     public array $rateSubjects = [];
     public bool $allow = true;
     public bool $failCreate = false;
+    /** @var array<string, \N3\Module\Media\MediaUsage> */
+    public array $usages = [];
 
     public function list(int $limit): array
     {
@@ -185,6 +222,27 @@ final class InMemoryMediaRepository implements MediaRepository
         }
         $this->assets[$asset->publicId] = $asset;
         $this->events[] = 'upload_succeeded';
+    }
+
+    public function usage(string $publicId): \N3\Module\Media\MediaUsage
+    {
+        return $this->usages[$publicId] ?? new \N3\Module\Media\MediaUsage(0, 0);
+    }
+    public function usages(array $publicIds): array
+    {
+        $result = [];
+        foreach ($publicIds as $id) { $result[$id] = $this->usage($id); }
+        return $result;
+    }
+
+    public function deleteIfUnused(string $publicId): bool
+    {
+        if (($this->usages[$publicId]->attachments ?? 0) !== 0 || !isset($this->assets[$publicId])) {
+            return false;
+        }
+        unset($this->assets[$publicId]);
+        $this->events[] = 'asset_deleted';
+        return true;
     }
 
     public function allowUpload(string $subject, int $now, int $limit): bool

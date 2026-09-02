@@ -27,7 +27,7 @@ final class MediaModuleTest extends TestCase
     {
         $module = new MediaModule();
         self::assertSame(MediaSchema::MODULE_ID, $module->manifest()->id);
-        self::assertSame('0.2.0', $module->manifest()->version);
+        self::assertSame('0.3.0', $module->manifest()->version);
         self::assertInstanceOf(ModuleMigrationProvider::class, $module);
         self::assertSame(MediaSchema::MODULE_ID, $module->migrations()[0]->moduleId());
         self::assertSame('202609010002_create_media_library', $module->migrations()[0]->version());

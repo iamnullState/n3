@@ -392,6 +392,10 @@ a {
 .media-card > div { padding: 1rem; }
 .media-card h3 { margin: 0; overflow-wrap: anywhere; }
 .media-card p { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.9rem; }
+.media-actions { display: grid; gap: 0.5rem; margin-top: 1rem; }
+.media-actions form, .media-actions .button { width: 100%; }
+.media-actions .button { border-width: 1px; cursor: pointer; }
+.media-actions .button:disabled { cursor: not-allowed; opacity: 0.55; }
 .page-media-panel { display: grid; gap: 1rem; }
 .page-media-preview { display: block; width: min(100%, 24rem); height: auto; max-height: 18rem; object-fit: contain; border-radius: 0.75rem; background: var(--surface-strong); }
 .preview-banner { margin-bottom: 2rem; padding: 0.85rem 1rem; border: 1px solid var(--line); border-radius: 0.75rem; background: rgb(245 158 11 / 0.14); }

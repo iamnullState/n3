@@ -95,6 +95,29 @@ final class MediaRepositoryTest extends TestCase
         }
     }
 
+    public function testUnusedAssetCanBeDeletedAtomicallyAndIsAudited(): void
+    {
+        $repository = new PdoMediaRepository(
+            $this->runtimeConnection,
+            new TransactionManager($this->runtimeConnection),
+            str_repeat('s', 32),
+        );
+        $id = str_repeat('c', 32);
+        $repository->create(new MediaAsset(
+            $id, 'Disposable image', 40, 30, 1200, str_repeat('d', 64),
+            new DateTimeImmutable('2026-09-01 12:00:00', new DateTimeZone('UTC')),
+        ));
+
+        self::assertSame(0, $repository->usage($id)->attachments);
+        self::assertSame(0, $repository->usages([$id])[$id]->publishedAttachments);
+        self::assertTrue($repository->deleteIfUnused($id));
+        self::assertNull($repository->find($id));
+        self::assertFalse($repository->deleteIfUnused($id));
+        self::assertSame('asset_deleted', $this->runtimeConnection->query(sprintf(
+            'SELECT event_key FROM `%s` ORDER BY id DESC LIMIT 1', MediaSchema::eventsTable(),
+        ))->fetchColumn());
+    }
+
     private function removeSchema(): void
     {
         foreach ([MediaSchema::attachmentsTable(), MediaSchema::limitsTable(), MediaSchema::eventsTable(), MediaSchema::assetsTable()] as $table) {
