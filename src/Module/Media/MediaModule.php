@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace N3\Module\Media;
 
 use LogicException;
+use N3\App\Content\PageMediaProvider;
 use N3\Core\Database\ConnectionFactory;
 use N3\Core\Database\DatabaseConfig;
 use N3\Core\Database\TransactionManager;
@@ -22,12 +23,13 @@ use N3\Core\Session\NativeSessionStore;
 use N3\Core\Storage\ScopedModuleStorage;
 use N3\Core\View\View;
 use N3\Module\Media\Migration\CreateMediaLibrary;
+use N3\Module\Media\Migration\CreatePageAttachments;
 
 final class MediaModule implements Module, ModuleMigrationProvider
 {
     public function manifest(): ModuleManifest
     {
-        return new ModuleManifest(MediaSchema::MODULE_ID, '0.1.0', '^0.2');
+        return new ModuleManifest(MediaSchema::MODULE_ID, '0.2.0', '^0.2');
     }
 
     public function register(ServiceRegistry $services): void
@@ -50,13 +52,20 @@ final class MediaModule implements Module, ModuleMigrationProvider
             $connection = (new ConnectionFactory())->create(DatabaseConfig::fromEnvironment());
             return new PdoMediaRepository($connection, new TransactionManager($connection), $config->securityHashKey);
         });
+        $pageRepository = new LazyPageMediaRepository(static function (): PageMediaRepository {
+            $connection = (new ConnectionFactory())->create(DatabaseConfig::fromEnvironment());
+            return new PdoPageMediaRepository($connection, new TransactionManager($connection));
+        });
+        $previews = new ScopedModuleStorage($root . '/storage/modules', MediaSchema::MODULE_ID, 'cache');
         $media = new MediaService(
             $repository,
             $processor,
             new ScopedModuleStorage($root . '/storage/modules', MediaSchema::MODULE_ID, 'data', $config->maximumProcessedBytes),
-            new ScopedModuleStorage($root . '/storage/modules', MediaSchema::MODULE_ID, 'cache'),
+            $previews,
             $config,
         );
+        $pageMedia = new PageMediaService($pageRepository);
+        $publicMedia = new PublicMediaController(new PublicMediaService($pageRepository, $previews), $logger);
         $session = new NativeSessionStore($root . '/storage/sessions', $app['environment'] === 'production');
         $controller = new MediaController(
             $view,
@@ -67,9 +76,11 @@ final class MediaModule implements Module, ModuleMigrationProvider
             $logger,
         );
         $services->register(MediaService::class, $media);
+        $services->register(PageMediaProvider::class, $pageMedia);
         $router->get('/admin/media', [$controller, 'index']);
         $router->post('/admin/media', [$controller, 'upload']);
         $router->get('/admin/media/{id}/preview', [$controller, 'preview']);
+        $router->get('/media/{id}.webp', [$publicMedia, 'show']);
     }
 
     public function boot(ServiceRegistry $services, EventListenerRegistry $events): void
@@ -78,6 +89,6 @@ final class MediaModule implements Module, ModuleMigrationProvider
 
     public function migrations(): array
     {
-        return [new CreateMediaLibrary()];
+        return [new CreateMediaLibrary(), new CreatePageAttachments()];
     }
 }

@@ -83,6 +83,8 @@ Phase 6B changes no Analytics schema. Its administrator report uses one time-bou
 
 Phase 7A's optional Media module owns prefixed asset, upload-limit, and event tables. Asset rows catalog only the random identifier, administrator label, sanitized dimensions, processed byte size, master checksum, and timestamp. Fixed-window rate subjects are HMAC-hashed before storage. Media tables do not store raw uploads, original filenames, client MIME claims, source paths, metadata, raw IP addresses, request payloads, or image bytes. See [MEDIA.md](MEDIA.md).
 
+Phase 7B adds a Media-owned one-row-per-Page attachment table with foreign keys to Core Pages and sanitized Media assets. It stores only Page ID, random asset ID, required alt text, and timestamps. Attachment mutations lock the draft Page version and write controlled content events in the same transaction. The public authorization query joins attachments to published Pages by indexed keys; public URLs, cache state, source paths, labels, and image bytes are not persisted.
+
 Public registration must never accept `account_status` or `role_key` from the request. `PdoUserRepository::createPending()` fixes these values to `pending_verification` and `member`.
 
 ## Database accounts

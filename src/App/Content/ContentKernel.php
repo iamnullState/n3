@@ -19,7 +19,12 @@ use N3\Core\View\View;
 final class ContentKernel
 {
     /** @return array{admin: AdminPageController, public: PublicPageController} */
-    public static function controllers(string $root, View $view, string $environment): array
+    public static function controllers(
+        string $root,
+        View $view,
+        string $environment,
+        ?PageMediaProvider $media = null,
+    ): array
     {
         $database = require $root . '/config/database.php';
         $connection = (new ConnectionFactory())->create($database);
@@ -41,8 +46,9 @@ final class ContentKernel
                 new AuthSessionManager($session, $csrf, $users, $config->sessionIdleTtl, $config->sessionAbsoluteTtl),
                 $csrf,
                 new FlashBag($session),
+                $media,
             ),
-            'public' => new PublicPageController($view, $service),
+            'public' => new PublicPageController($view, $service, $media),
         ];
     }
 }

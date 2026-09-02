@@ -15,7 +15,7 @@ The Secure Core Kernel milestone provides:
 - safe 404 and 500 views;
 - PHPUnit coverage for the request lifecycle, routing, escaping, and landing page.
 
-The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5 establishes trusted module boot, durable synchronization/jobs, private resource and transport contracts, and preview-first forward module migrations. Phase 6 adds opt-in aggregate Analytics and a data-free local `stdio` MCP server. Phase 7A adds a disabled-by-default private administrator Media library that accepts JPEG/PNG pixels and stores sanitized WebP derivatives outside `public/`. Page attachment, public media delivery, deletion, and broader formats remain deferred.
+The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5 establishes trusted module boot, durable synchronization/jobs, private resource and transport contracts, and preview-first forward module migrations. Phase 6 adds opt-in aggregate Analytics and a data-free local `stdio` MCP server. Phase 7 adds a disabled-by-default Media module with secure JPEG/PNG ingestion plus one draft-controlled lead-image attachment per Page. Published Pages may retrieve only the attached, sanitized preview derivative; masters remain private. Deletion, galleries, inline images, broader formats, and remote storage remain deferred.
 
 ## Requirements
 

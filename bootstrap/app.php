@@ -6,6 +6,7 @@ use N3\App\Controller\HomeController;
 use N3\App\Controller\ApiSystemController;
 use N3\App\Identity\IdentityKernel;
 use N3\App\Content\ContentKernel;
+use N3\App\Content\PageMediaProvider;
 use N3\Core\Application;
 use N3\Core\Http\Router;
 use N3\Core\Logging\FileLogger;
@@ -62,8 +63,15 @@ $router->post('/forgot-password', static fn ($request) => $access()->requestRese
 $router->get('/reset-password', static fn ($request) => $access()->showReset($request));
 $router->post('/reset-password', static fn ($request) => $access()->reset($request));
 $contentControllers = null;
-$content = static function () use (&$contentControllers, $root, $view, $config) {
-    return $contentControllers ??= ContentKernel::controllers($root, $view, $config['environment']);
+$content = static function () use (&$contentControllers, &$services, $root, $view, $config) {
+    $media = isset($services) && $services->has(PageMediaProvider::class)
+        ? $services->get(PageMediaProvider::class)
+        : null;
+    if ($media !== null && !$media instanceof PageMediaProvider) {
+        throw new LogicException('The Page Media service does not satisfy its contract.');
+    }
+
+    return $contentControllers ??= ContentKernel::controllers($root, $view, $config['environment'], $media);
 };
 $router->get('/admin/pages', static fn ($request) => $content()['admin']->index($request));
 $router->get('/admin/pages/create', static fn ($request) => $content()['admin']->create($request));
@@ -73,6 +81,7 @@ $router->post('/admin/pages/{id}', static fn ($request) => $content()['admin']->
 $router->get('/admin/pages/{id}/preview', static fn ($request) => $content()['admin']->preview($request));
 $router->post('/admin/pages/{id}/publish', static fn ($request) => $content()['admin']->publish($request));
 $router->post('/admin/pages/{id}/unpublish', static fn ($request) => $content()['admin']->unpublish($request));
+$router->post('/admin/pages/{id}/media', static fn ($request) => $content()['admin']->updateMedia($request));
 $router->get('/pages/{slug}', static fn ($request) => $content()['public']->show($request));
 
 $services = new ServiceRegistry();

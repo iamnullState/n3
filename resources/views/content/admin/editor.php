@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+use N3\App\Content\PageMediaAttachment;
+use N3\App\Content\PageMediaOption;
 $page = $viewData['page'] ?? null;
 $values = is_array($viewData['values'] ?? null) ? $viewData['values'] : [];
 $errors = is_array($viewData['errors'] ?? null) ? $viewData['errors'] : [];
@@ -7,6 +9,9 @@ $flash = is_array($viewData['flash'] ?? null) ? $viewData['flash'] : null;
 $creating = ($viewData['mode'] ?? '') === 'create';
 $published = !$creating && $page->status === 'published';
 $field = static fn (string $name): string => isset($errors[$name]) ? ' aria-invalid="true"' : '';
+$mediaEnabled = (bool) ($viewData['mediaEnabled'] ?? false);
+$mediaOptions = is_array($viewData['mediaOptions'] ?? null) ? $viewData['mediaOptions'] : [];
+$mediaAttachment = ($viewData['mediaAttachment'] ?? null) instanceof PageMediaAttachment ? $viewData['mediaAttachment'] : null;
 ?>
 <header class="site-header"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true">N3</span><span>N3</span></a><a href="/admin/pages">All pages</a></header>
 <main class="admin-page editor-page" id="main-content">
@@ -23,6 +28,22 @@ $field = static fn (string $name): string => isset($errors[$name]) ? ' aria-inva
         <div class="form-field"><label for="page-body">Body</label><textarea id="page-body" name="body" rows="18" maxlength="100000" aria-describedby="body-help body-error"<?= $field('body') ?>><?= $escape($values['body'] ?? '') ?></textarea><p class="field-help" id="body-help">Plain text only in this milestone. Blank drafts are allowed; publishing requires content.</p><p class="field-error" id="body-error"><?= $escape($errors['body'] ?? '') ?></p></div>
         <button class="button" type="submit"><?= $creating ? 'Create draft' : 'Save draft' ?></button>
     </form>
+    <?php endif; ?>
+    <?php if (!$creating && $mediaEnabled): ?>
+    <section class="publication-panel page-media-panel" aria-labelledby="page-media-title"><h2 id="page-media-title">Lead image</h2>
+        <?php if (isset($errors['media_form'])): ?><div class="alert alert-warning" role="alert"><?= $escape($errors['media_form']) ?></div><?php endif; ?>
+        <?php if ($mediaAttachment !== null): ?><img class="page-media-preview" src="/admin/media/<?= $escape($mediaAttachment->publicId) ?>/preview" alt="" width="<?= $escape($mediaAttachment->width) ?>" height="<?= $escape($mediaAttachment->height) ?>"><p>Current alternative text: <?= $escape($mediaAttachment->altText) ?></p><?php endif; ?>
+        <?php if ($published): ?><p>Unpublish this page before changing its lead image.</p>
+        <?php elseif ($mediaOptions === []): ?><p>No images are available. <a href="/admin/media">Add an image to the private Media library</a>.</p>
+        <?php else: ?>
+        <form class="editor-form" method="post" action="/admin/pages/<?= $escape($page->id) ?>/media" novalidate>
+            <input type="hidden" name="_csrf" value="<?= $escape($viewData['mediaCsrf'] ?? '') ?>"><input type="hidden" name="lock_version" value="<?= $escape($page->lockVersion) ?>">
+            <div class="form-field"><label for="page-media">Library image</label><select id="page-media" name="media_id" aria-describedby="media-help media-error"<?= $field('media') ?>><option value="">No lead image</option><?php foreach ($mediaOptions as $option): if (!$option instanceof PageMediaOption) { continue; } ?><option value="<?= $escape($option->publicId) ?>"<?= $mediaAttachment?->publicId === $option->publicId ? ' selected' : '' ?>><?= $escape($option->label) ?> — <?= $escape($option->width) ?> × <?= $escape($option->height) ?></option><?php endforeach; ?></select><p class="field-help" id="media-help">Selecting “No lead image” detaches the current image without deleting it from Media.</p><p class="field-error" id="media-error"><?= $escape($errors['media'] ?? '') ?></p></div>
+            <div class="form-field"><label for="page-media-alt">Alternative text</label><textarea id="page-media-alt" name="alt_text" rows="3" maxlength="300" aria-describedby="media-alt-help media-alt-error"<?= $field('alt_text') ?>><?= $escape($mediaAttachment?->altText ?? '') ?></textarea><p class="field-help" id="media-alt-help">Briefly describe the image’s purpose for people who cannot see it. Required when an image is selected.</p><p class="field-error" id="media-alt-error"><?= $escape($errors['alt_text'] ?? '') ?></p></div>
+            <button class="button" type="submit">Save lead image</button>
+        </form>
+        <?php endif; ?>
+    </section>
     <?php endif; ?>
     <?php if (!$creating): ?>
     <section class="publication-panel" aria-labelledby="publication-title"><h2 id="publication-title">Publication</h2>

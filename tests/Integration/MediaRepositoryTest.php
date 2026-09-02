@@ -87,7 +87,7 @@ final class MediaRepositoryTest extends TestCase
         ))->fetchAll(), 'event_key'));
 
         $columns = [];
-        foreach ([MediaSchema::assetsTable(), MediaSchema::eventsTable(), MediaSchema::limitsTable()] as $table) {
+        foreach ([MediaSchema::assetsTable(), MediaSchema::eventsTable(), MediaSchema::limitsTable(), MediaSchema::attachmentsTable()] as $table) {
             $columns = [...$columns, ...array_column($this->migrationConnection->query(sprintf('SHOW COLUMNS FROM `%s`', $table))->fetchAll(), 'Field')];
         }
         foreach (['filename', 'original_name', 'mime', 'ip', 'payload', 'metadata', 'source_path'] as $forbidden) {
@@ -97,7 +97,7 @@ final class MediaRepositoryTest extends TestCase
 
     private function removeSchema(): void
     {
-        foreach ([MediaSchema::limitsTable(), MediaSchema::eventsTable(), MediaSchema::assetsTable()] as $table) {
+        foreach ([MediaSchema::attachmentsTable(), MediaSchema::limitsTable(), MediaSchema::eventsTable(), MediaSchema::assetsTable()] as $table) {
             $this->migrationConnection->exec(sprintf('DROP TABLE IF EXISTS `%s`', $table));
         }
         $this->migrationConnection->prepare('DELETE FROM module_migrations WHERE module_id = :module_id')->execute(['module_id' => MediaSchema::MODULE_ID]);

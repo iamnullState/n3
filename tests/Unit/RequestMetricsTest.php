@@ -24,6 +24,7 @@ final class RequestMetricsTest extends TestCase
         $cases = [
             '/' => 'public.home',
             '/pages/private-looking-slug?token=secret' => 'public.page',
+            '/media/0123456789abcdef0123456789abcdef.webp?token=secret' => 'public.media',
             '/login?email=person%40example.test' => 'identity',
             '/verify-email?token=private' => 'identity',
             '/admin/pages/184/edit' => 'admin.pages',

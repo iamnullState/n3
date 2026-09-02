@@ -24,4 +24,9 @@ final class MediaSchema
     {
         return ModuleResourcePolicy::schemaPrefix(self::MODULE_ID) . 'upload_limits';
     }
+
+    public static function attachmentsTable(): string
+    {
+        return ModuleResourcePolicy::schemaPrefix(self::MODULE_ID) . 'page_attachments';
+    }
 }

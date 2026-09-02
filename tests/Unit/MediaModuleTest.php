@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace N3\Tests\Unit;
 
+use N3\App\Content\PageMediaProvider;
 use N3\Core\Event\EventDispatcher;
 use N3\Core\Http\Request;
 use N3\Core\Http\Router;
@@ -26,10 +27,11 @@ final class MediaModuleTest extends TestCase
     {
         $module = new MediaModule();
         self::assertSame(MediaSchema::MODULE_ID, $module->manifest()->id);
-        self::assertSame('0.1.0', $module->manifest()->version);
+        self::assertSame('0.2.0', $module->manifest()->version);
         self::assertInstanceOf(ModuleMigrationProvider::class, $module);
         self::assertSame(MediaSchema::MODULE_ID, $module->migrations()[0]->moduleId());
         self::assertSame('202609010002_create_media_library', $module->migrations()[0]->version());
+        self::assertSame('202609010003_create_page_attachments', $module->migrations()[1]->version());
     }
 
     public function testMediaIsDisabledByDefaultAndCanBeExplicitlyEnabled(): void
@@ -80,6 +82,7 @@ final class MediaModuleTest extends TestCase
             (new ModuleManager('0.2.0', $services, new EventDispatcher()))->boot([new MediaModule()]);
 
             self::assertTrue($services->has(MediaService::class));
+            self::assertTrue($services->has(PageMediaProvider::class));
             $response = $router->dispatch(Request::create('GET', '/admin/media'));
             self::assertSame(303, $response->status());
             self::assertSame('/login', $response->headers()['Location']);

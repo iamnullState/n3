@@ -20,6 +20,10 @@ final class RequestMetricClassifier
             return 'public.page';
         }
 
+        if (preg_match('#^/media/[a-f0-9]{32}\.webp$#D', $path) === 1) {
+            return 'public.media';
+        }
+
         if ($path === '/register'
             || $path === '/login'
             || $path === '/logout'

@@ -13,6 +13,7 @@ final readonly class RequestMetric
     public const ROUTE_CATEGORIES = [
         'public.home',
         'public.page',
+        'public.media',
         'identity',
         'admin.pages',
         'admin.analytics',

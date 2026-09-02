@@ -372,7 +372,8 @@ a {
 .analytics-table code { font: inherit; font-weight: 750; }
 .editor-page { width: min(58rem, calc(100% - 2rem)); }
 .editor-form textarea { width: 100%; resize: vertical; min-height: 5rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: 0.75rem; background: var(--background); color: var(--text); font: inherit; line-height: 1.55; }
-.editor-form input[aria-invalid="true"], .editor-form textarea[aria-invalid="true"] { border-color: #b42318; }
+.editor-form select { width: 100%; min-height: 2.75rem; padding: 0.65rem 0.75rem; border: 1px solid var(--line); border-radius: 0.75rem; background: var(--background); color: var(--text); font: inherit; }
+.editor-form input[aria-invalid="true"], .editor-form textarea[aria-invalid="true"], .editor-form select[aria-invalid="true"] { border-color: #b42318; }
 .slug-field { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.5rem; }
 .slug-field span { color: var(--muted); }
 .publication-panel { margin-top: 1.5rem; }
@@ -391,10 +392,14 @@ a {
 .media-card > div { padding: 1rem; }
 .media-card h3 { margin: 0; overflow-wrap: anywhere; }
 .media-card p { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.9rem; }
+.page-media-panel { display: grid; gap: 1rem; }
+.page-media-preview { display: block; width: min(100%, 24rem); height: auto; max-height: 18rem; object-fit: contain; border-radius: 0.75rem; background: var(--surface-strong); }
 .preview-banner { margin-bottom: 2rem; padding: 0.85rem 1rem; border: 1px solid var(--line); border-radius: 0.75rem; background: rgb(245 158 11 / 0.14); }
 .public-page-heading { padding-block: 3rem 2rem; border-bottom: 1px solid var(--line); }
 .page-excerpt { max-width: 42rem; font-size: 1.2rem; }
 .page-body { padding-block: 2.5rem; font-size: 1.08rem; overflow-wrap: anywhere; white-space: normal; }
+.page-lead-image { margin: 0 0 2rem; }
+.page-lead-image img { display: block; width: 100%; height: auto; max-height: 34rem; object-fit: cover; border-radius: 1rem; }
 
 @keyframes greeting-shift {
     from { transform: translateX(2.75ch); }

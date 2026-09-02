@@ -126,7 +126,7 @@ Delivery becomes active only after all module listener registration is sealed. I
 
 `n3/mcp-server` is disabled by default and enters the allowlist only when `MCP_ENABLED=true`. It registers a stateless local protocol server, has no migrations, routes, database connection, files, network transport, or background work, and exposes only a constant data-free status tool through an explicit CLI process. See [MCP.md](MCP.md).
 
-`n3/media` is disabled by default and enters the allowlist only when `MEDIA_ENABLED=true`. It owns a private image catalog, HMAC-keyed upload limits, sanitized events, private master/preview storage, and administrator-only routes. It requires GD and always re-encodes accepted JPEG/PNG pixels to WebP; raw uploads and original filenames are not retained. See [MEDIA.md](MEDIA.md).
+`n3/media` is disabled by default and enters the allowlist only when `MEDIA_ENABLED=true`. Version `0.2.0` owns a private image catalog, Page attachment relationship, HMAC-keyed upload limits, sanitized events, private master/preview storage, administrator routes, and attachment-authorized public preview delivery. Page consumes only the optional `PageMediaProvider` application contract, so Core Page schema and behavior remain valid when Media is disabled. GD re-encodes accepted JPEG/PNG pixels to WebP; raw uploads, original filenames, private masters, and internal labels are never publicly delivered. See [MEDIA.md](MEDIA.md).
 
 ## Jobs
 

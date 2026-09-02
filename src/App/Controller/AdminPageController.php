@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace N3\App\Controller;
 
 use N3\App\Content\Page;
+use N3\App\Content\PageMediaProvider;
 use N3\App\Content\PageService;
 use N3\App\Identity\AuthSessionManager;
 use N3\App\Identity\IdentityUser;
@@ -22,6 +23,7 @@ final readonly class AdminPageController
         private AuthSessionManager $auth,
         private CsrfTokenManager $csrf,
         private FlashBag $flash,
+        private ?PageMediaProvider $media = null,
     ) {
     }
 
@@ -117,8 +119,48 @@ final readonly class AdminPageController
             'metaDescription' => $page->excerpt,
             'page' => $page,
             'preview' => true,
+            'media' => $this->media?->attachment($page->id),
             'robots' => 'noindex,nofollow',
         ]));
+    }
+
+    public function updateMedia(Request $request): Response
+    {
+        $admin = $this->adminOrResponse();
+        if ($admin instanceof Response) { return $admin; }
+        if ($this->media === null) { return $this->notFound(); }
+        $page = $this->routePage($request);
+        if ($page === null) { return $this->notFound(); }
+        if (!$this->csrf->verify('page_media_' . $page->id, $request->input('_csrf'))) {
+            return $this->renderEditor($page, $this->pageValues($page), ['media_form' => 'Your image form expired. Refresh and try again.'], 419, 'edit');
+        }
+        $version = $this->version($request);
+        if ($version === null) {
+            return $this->renderEditor($page, $this->pageValues($page), ['media_form' => 'The page version is invalid. Reload and try again.'], 422, 'edit');
+        }
+        $mediaId = $request->input('media_id');
+        $altText = $request->input('alt_text');
+        if (!is_string($mediaId) || !is_string($altText)) {
+            return $this->renderEditor($page, $this->pageValues($page), ['media' => 'Choose an image from the Media library.'], 422, 'edit');
+        }
+        $outcome = $this->media->updateDraft(
+            $page->id,
+            $mediaId,
+            $altText,
+            $admin->id,
+            $version,
+            (string) $request->attribute('request_id', ''),
+        );
+        if ($outcome->conflict) {
+            $this->flash->set('warning', 'The page changed or is published. Reload before changing its image.');
+            return Response::redirect('/admin/pages/' . $page->id . '/edit');
+        }
+        if ($outcome->errors !== []) {
+            return $this->renderEditor($page, $this->pageValues($page), $outcome->errors, 422, 'edit');
+        }
+        $this->flash->set('success', trim((string) $mediaId) === '' ? 'Page image detached.' : 'Page image attached.');
+
+        return Response::redirect('/admin/pages/' . $page->id . '/edit');
     }
 
     public function publish(Request $request): Response
@@ -223,6 +265,10 @@ final readonly class AdminPageController
             'csrf' => $this->csrf->token($page === null ? 'page_create' : 'page_update_' . $page->id),
             'publishCsrf' => $page === null ? '' : $this->csrf->token('page_publish_' . $page->id),
             'unpublishCsrf' => $page === null ? '' : $this->csrf->token('page_unpublish_' . $page->id),
+            'mediaCsrf' => $page === null || $this->media === null ? '' : $this->csrf->token('page_media_' . $page->id),
+            'mediaEnabled' => $this->media !== null,
+            'mediaOptions' => $page === null || $this->media === null ? [] : $this->media->options($page->id),
+            'mediaAttachment' => $page === null || $this->media === null ? null : $this->media->attachment($page->id),
             'flash' => $this->flash->pull(),
         ]), $status);
     }

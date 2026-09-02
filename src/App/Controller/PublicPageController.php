@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace N3\App\Controller;
 
 use N3\App\Content\PageService;
+use N3\App\Content\PageMediaProvider;
 use N3\Core\Http\Request;
 use N3\Core\Http\Response;
 use N3\Core\View\View;
 
 final readonly class PublicPageController
 {
-    public function __construct(private View $view, private PageService $pages)
+    public function __construct(
+        private View $view,
+        private PageService $pages,
+        private ?PageMediaProvider $media = null,
+    )
     {
     }
 
@@ -30,6 +35,7 @@ final readonly class PublicPageController
             'metaDescription' => $page->excerpt,
             'page' => $page,
             'preview' => false,
+            'media' => $this->media?->attachment($page->id),
         ]));
     }
 }

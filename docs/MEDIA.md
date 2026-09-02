@@ -1,6 +1,6 @@
 # Private Media Library
 
-Phase 7A adds `n3/media`, a disabled-by-default administrator image-ingestion module. It proves a secure upload, sanitization, private-storage, catalog, and preview boundary. It is not yet a public asset delivery system or a Page attachment workflow.
+Phase 7A adds `n3/media`, a disabled-by-default administrator image-ingestion module. Phase 7B adds one optional Page lead-image relationship and controlled delivery of the sanitized preview derivative. Private masters never become web-addressable.
 
 ## Enablement and deployment
 
@@ -17,6 +17,8 @@ php bin/n3 module:sync --apply
 
 Only an authenticated `admin` can access `GET /admin/media`, submit `POST /admin/media`, or retrieve `GET /admin/media/{id}/preview`. Member access is denied, anonymous access redirects to login, HTML responses use `no-store`, and previews use a short private cache plus `X-Robots-Tag: noindex, nofollow`.
 
+After the `0.2.0` module migration is applied, a draft Page editor may select one of the 100 most recent assets (always including its current selection), provide required alternative text, or detach its lead image. Public `GET /media/{id}.webp` succeeds only while the asset is attached to at least one published Page. It serves the bounded preview bytes with `Content-Type: image/webp`, a five-minute public cache, and ETag revalidation. Internal library labels are never rendered on the public Page.
+
 ## Ingestion contract
 
 - Accept JPEG and PNG only. Client MIME types, filenames, extensions, and image dimensions are not trusted.
@@ -30,13 +32,16 @@ Only an authenticated `admin` can access `GET /admin/media`, submit `POST /admin
 
 ## Catalog, rate limit, and audit boundary
 
-The forward-only module migration owns three prefixed tables:
+The forward-only module migrations own four prefixed tables:
 
 - assets: random public ID, administrator label, sanitized dimensions, WebP byte size, master SHA-256, and creation timestamp;
 - upload limits: HMAC-SHA-256 subject hash, fixed-hour bucket, and attempt count;
 - events: controlled event key, optional random asset ID, and occurrence timestamp.
+- Page attachments: one Page ID, one random asset ID, required alternative text, and relationship timestamps.
 
 The upload limit defaults to 20 attempts per trusted `REMOTE_ADDR` per hour. Forwarded headers remain untrusted. IP addresses are HMAC-hashed with `SECURITY_HASH_KEY` before persistence. Audit keys are limited to `upload_succeeded`, `upload_rejected`, and `upload_rate_limited`. Raw IPs, original filenames, source paths, request payloads, image metadata, and source bytes are not stored or logged.
+
+Attachment changes use the Page lock version, are restricted to drafts, increment that lock, attribute the administrator through `updated_by`, and append controlled `media_attached`/`media_detached` content events. Alternative text is validated as 2–300 UTF-8 characters without controls and escaped at render time. Blank decorative alternatives, captions, and HTML are not accepted in this slice.
 
 ## Configuration
 
@@ -56,10 +61,12 @@ PHP/web-server request limits must allow the configured raw upload size. Keep `p
 
 ## Backup and recovery
 
-Back up the MariaDB catalog and `storage/modules/n3/media/data/` together from the same maintenance window. The cache previews are reproducible in principle but no regeneration command exists in Phase 7A, so include them in operational backups for now. A database row without its corresponding private file returns a controlled 503 and records only an exception class in the application log. A file without a catalog row is not addressable through the preview route.
+Back up the MariaDB catalog/attachments and `storage/modules/n3/media/data/` together from the same maintenance window. The cache previews are reproducible in principle but no regeneration command exists yet, so include them in operational backups. A database row without its corresponding private file returns a controlled 503 and records only an exception class in the application log. A file without a catalog and published attachment is not addressable through the public route.
+
+Public delivery is disclosure, not access-controlled secrecy. Unpublishing or detaching stops new origin responses, but five-minute caches and copies already downloaded by browsers, proxies, crawlers, or users cannot be revoked. Never attach an image that must remain confidential.
 
 Do not edit applied migration source, delete module history, or destructively roll back after Media data exists. Recover failed DDL with schema inspection and a reviewed forward repair. Disabling the module removes its runtime routes but intentionally retains its catalog and private files.
 
 ## Deferred work
 
-Page attachment, public delivery, deletion/replacement, derivative regeneration, quotas and retention, bulk upload, cropping, galleries, SVG/GIF/AVIF, video, and externally backed object storage are outside Phase 7A. Each requires a separate authorization, lifecycle, privacy, and recovery contract.
+Deletion/replacement of library assets, larger/responsive renditions, derivative regeneration, quotas and retention, bulk upload, cropping/focal points, captions, galleries, inline rich-text media, SVG/GIF/AVIF, video, signed URLs, CDN behavior, and externally backed object storage remain deferred. Each requires a separate authorization, lifecycle, privacy, and recovery contract.

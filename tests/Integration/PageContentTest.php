@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace N3\Tests\Integration;
 
 use N3\App\Content\PageService;
+use N3\App\Content\PageMediaAttachment;
+use N3\App\Content\PageMediaMutationOutcome;
+use N3\App\Content\PageMediaOption;
+use N3\App\Content\PageMediaProvider;
 use N3\App\Content\PageValidator;
 use N3\App\Content\PdoContentEventRecorder;
 use N3\App\Content\PdoPageRepository;
@@ -118,16 +122,37 @@ final class PageContentTest extends TestCase
         self::assertMatchesRegularExpression('#^/admin/pages/[0-9]+/edit$#', $created->headers()['Location']);
         preg_match('#/admin/pages/([0-9]+)/edit#', $created->headers()['Location'], $matches);
         $page = $this->service->find((int) $matches[1]);
+        self::assertSame(404, $controller->updateMedia(
+            Request::create('POST', '/admin/pages/' . $page->id . '/media')->withAttribute('route_parameters', ['id' => (string) $page->id]),
+        )->status());
         $pageRequest = Request::create('POST', '/admin/pages/' . $page->id . '/publish', ['_csrf' => 'invalid', 'lock_version' => (string) $page->lockVersion])
             ->withAttribute('route_parameters', ['id' => (string) $page->id]);
         self::assertSame(419, $controller->publish($pageRequest)->status());
+        $mediaProvider = new FeaturePageMediaProvider();
+        $mediaController = new AdminPageController(new View(dirname(__DIR__, 2) . '/resources/views'), $this->service, $auth, $csrf, new FlashBag($session), $mediaProvider);
+        $mediaRoute = ['route_parameters' => ['id' => (string) $page->id]];
+        self::assertSame(419, $mediaController->updateMedia(Request::create('POST', '/admin/pages/' . $page->id . '/media', [
+            '_csrf' => 'invalid', 'lock_version' => (string) $page->lockVersion,
+        ])->withAttribute('route_parameters', $mediaRoute['route_parameters']))->status());
+        self::assertSame(422, $mediaController->updateMedia(Request::create('POST', '/admin/pages/' . $page->id . '/media', [
+            '_csrf' => $csrf->token('page_media_' . $page->id), 'lock_version' => (string) $page->lockVersion,
+            'media_id' => ['nested'], 'alt_text' => 'Description',
+        ])->withAttribute('route_parameters', $mediaRoute['route_parameters'])->withAttribute('request_id', $this->requestId))->status());
+        $attached = $mediaController->updateMedia(Request::create('POST', '/admin/pages/' . $page->id . '/media', [
+            '_csrf' => $csrf->token('page_media_' . $page->id), 'lock_version' => (string) $page->lockVersion,
+            'media_id' => str_repeat('a', 32), 'alt_text' => 'A <bright> accessible image',
+        ])->withAttribute('route_parameters', $mediaRoute['route_parameters'])->withAttribute('request_id', $this->requestId));
+        self::assertSame(303, $attached->status());
         self::assertTrue($this->service->publish($page->id, $this->adminId, $page->lockVersion, $this->requestId)->succeeded());
-        $public = (new PublicPageController(new View(dirname(__DIR__, 2) . '/resources/views'), $this->service))->show(
+        $public = (new PublicPageController(new View(dirname(__DIR__, 2) . '/resources/views'), $this->service, $mediaProvider))->show(
             Request::create('GET', '/pages/safe-page')->withAttribute('route_parameters', ['slug' => 'safe-page']),
         );
         self::assertSame(200, $public->status());
         self::assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $public->body());
         self::assertStringNotContainsString('<script>alert(1)</script>', $public->body());
+        self::assertStringContainsString('/media/' . str_repeat('a', 32) . '.webp', $public->body());
+        self::assertStringContainsString('alt="A &lt;bright&gt; accessible image"', $public->body());
+        self::assertStringNotContainsString('Private & internal label', $public->body());
         self::assertSame(404, (new PublicPageController(new View(dirname(__DIR__, 2) . '/resources/views'), $this->service))->show(
             Request::create('GET', '/pages/missing')->withAttribute('route_parameters', ['slug' => 'missing']),
         )->status());
@@ -148,5 +173,26 @@ final class PageContentTest extends TestCase
         } finally {
             $this->connection->prepare('DELETE FROM users WHERE id = :id')->execute(['id' => $memberId]);
         }
+    }
+}
+
+final class FeaturePageMediaProvider implements PageMediaProvider
+{
+    private ?PageMediaAttachment $attachment = null;
+
+    public function options(int $pageId): array
+    {
+        return [new PageMediaOption(str_repeat('a', 32), 'Private & internal label', 1200, 800)];
+    }
+
+    public function attachment(int $pageId): ?PageMediaAttachment
+    {
+        return $this->attachment;
+    }
+
+    public function updateDraft(int $pageId, ?string $publicId, string $altText, int $actorId, int $expectedVersion, string $requestId): PageMediaMutationOutcome
+    {
+        $this->attachment = $publicId === null ? null : new PageMediaAttachment($publicId, $altText, 1200, 800);
+        return new PageMediaMutationOutcome();
     }
 }
