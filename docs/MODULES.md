@@ -108,6 +108,8 @@ Core creates one explicit `ServiceRegistry`. Core services are registered under 
 
 Core registers a lazy `CurrentPrincipalProvider` before module registration. It opens Identity persistence only when a module asks for the current authority, retains normal session expiry/version checks, and returns no display name, email, account ID, session ID, or token. This is an authorization boundary, not a general user-profile service.
 
+Core also registers a narrow `CurrentActorProvider` for audited module mutations that require attribution. It exposes only a positive internal account ID and the fixed authority after the same Identity session validation. Blog uses this contract; it receives no name, email, session identifier, or token. Modules that need only authorization must continue to use the less revealing principal contract.
+
 The registry is not ambient dependency injection and does not discover classes. Consumers request an explicit identifier and must verify the returned contract. Core must never depend on a service owned by an optional module.
 
 ## Events
@@ -127,6 +129,8 @@ Delivery becomes active only after all module listener registration is sealed. I
 `n3/mcp-server` is disabled by default and enters the allowlist only when `MCP_ENABLED=true`. It registers a stateless local protocol server, has no migrations, routes, database connection, files, network transport, or background work, and exposes only a constant data-free status tool through an explicit CLI process. See [MCP.md](MCP.md).
 
 `n3/media` is disabled by default and enters the allowlist only when `MEDIA_ENABLED=true`. Version `0.3.0` also adds bounded usage counts, checksum-verified preview regeneration, and unused-only deletion. Page consumes only the optional `PageMediaProvider` application contract, so Core Page schema and behavior remain valid when Media is disabled. GD re-encodes accepted JPEG/PNG pixels to WebP; raw uploads, original filenames, private masters, and internal labels are never publicly delivered. See [MEDIA.md](MEDIA.md).
+
+`n3/blog` is disabled by default and enters the allowlist only when `BLOG_ENABLED=true`. Version `0.1.0` owns its post and controlled audit-event tables through one forward migration, uses the narrow actor contract for fixed-administrator authoring, and exposes a ten-post bounded public index plus published-slug detail. Core, Page, and Media do not depend on Blog. See [BLOG.md](BLOG.md).
 
 ## Jobs
 

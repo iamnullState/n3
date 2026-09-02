@@ -4,7 +4,7 @@ N3 is a framework-free PHP modular-monolith foundation for an independently inst
 
 ## Current milestone
 
-The Secure Core Kernel milestone provides:
+Phase 9 Blog MVP is implemented and validated on the host plus MariaDB 11.8 and 12.3. It is awaiting review and commit. The Secure Core Kernel provides:
 
 - validated environment configuration;
 - a single public entry point;
@@ -15,7 +15,7 @@ The Secure Core Kernel milestone provides:
 - safe 404 and 500 views;
 - PHPUnit coverage for the request lifecycle, routing, escaping, and landing page.
 
-The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5 establishes trusted module boot, durable synchronization/jobs, private resource and transport contracts, and preview-first forward module migrations. Phase 6 adds opt-in aggregate Analytics and a data-free local `stdio` MCP server. Phase 7 adds a disabled-by-default Media module with secure image ingestion and lifecycle controls. Phase 8 adds an idempotent default-site scaffold, audited white-label identity, editable Page navigation, and published Home routing with a safe fallback.
+The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5 establishes trusted module boot, durable synchronization/jobs, private resource and transport contracts, and preview-first forward module migrations. Phase 6 adds opt-in aggregate Analytics and a data-free local `stdio` MCP server. Phase 7 adds a disabled-by-default Media module with secure image ingestion and lifecycle controls. Phase 8 adds an idempotent default-site scaffold, audited white-label identity, editable Page navigation, and published Home routing with a safe fallback. Phase 9 adds a disabled-by-default Blog module with secure administrator authoring and bounded public retrieval.
 
 ## Requirements
 
@@ -88,3 +88,4 @@ See `docs/ANALYTICS.md` for the opt-in aggregate metric boundary, module deploym
 See `docs/MCP.md` for the local protocol, trust, tool, rate-limit, enablement, and deferred capability boundaries.
 See `docs/MEDIA.md` for secure image ingestion, private storage, catalog, preview, backup, and deferred delivery boundaries.
 See `docs/SITE.md` for scaffold installation, site identity, navigation, public Home behavior, and recovery.
+See `docs/BLOG.md` for Blog enablement, content lifecycle, routes, security boundaries, migration, and recovery.

@@ -16,6 +16,8 @@ use N3\Core\Module\ModuleLifecycleFailed;
 use N3\Core\Observability\RequestMetricsSink;
 use N3\Core\Security\CurrentPrincipalProvider;
 use N3\Core\Security\LazyCurrentPrincipalProvider;
+use N3\Core\Security\CurrentActorProvider;
+use N3\Core\Security\LazyCurrentActorProvider;
 use N3\Core\Event\EventListenerFailed;
 use N3\Core\Service\ServiceRegistry;
 use N3\Core\View\View;
@@ -111,6 +113,12 @@ $services->register(View::class, $view);
 $services->register(FileLogger::class, $logger);
 $services->register(CurrentPrincipalProvider::class, new LazyCurrentPrincipalProvider(
     static fn (): CurrentPrincipalProvider => IdentityKernel::principalProvider(
+        $root,
+        $config['environment'],
+    ),
+));
+$services->register(CurrentActorProvider::class, new LazyCurrentActorProvider(
+    static fn (): CurrentActorProvider => IdentityKernel::actorProvider(
         $root,
         $config['environment'],
     ),

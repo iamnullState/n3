@@ -87,6 +87,8 @@ Phase 7B adds a Media-owned one-row-per-Page attachment table with foreign keys 
 
 Phase 8 adds one `site_settings` singleton, ordered `site_navigation_items` Page references, and sanitized `site_events`. Settings and navigation updates use an optimistic lock and one transaction. Scaffold installation requires an existing active, verified administrator and is idempotent by unique Page slug, singleton ID, and unique navigation Page reference. See [SITE.md](SITE.md).
 
+Phase 9's optional Blog module owns deterministic prefixed `posts` and `events` tables. Posts use a unique binary-collated canonical slug, fixed draft/published lifecycle, author/editor foreign keys, publication-state checks, and optimistic lock version. Event rows use controlled lifecycle fields and omit post content, slugs, profiles, payloads, network identifiers, and tokens. See [BLOG.md](BLOG.md).
+
 Public registration must never accept `account_status` or `role_key` from the request. `PdoUserRepository::createPending()` fixes these values to `pending_verification` and `member`.
 
 ## Database accounts
