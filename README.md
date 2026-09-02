@@ -4,7 +4,7 @@ N3 is a framework-free PHP modular-monolith foundation for an independently inst
 
 ## Current milestone
 
-Phase 9 Blog MVP is implemented and validated on the host plus MariaDB 11.8 and 12.3. It is awaiting review and commit. The Secure Core Kernel provides:
+Phase 9 Blog MVP is committed. Phase 10 is being defined for a shared-hosting browser installer. The Secure Core Kernel provides:
 
 - validated environment configuration;
 - a single public entry point;
@@ -31,6 +31,8 @@ composer install
 ```
 
 Configuration is read from real environment variables. `.env.example` documents the current keys; the application does not parse `.env` files or commit secrets.
+
+`EMAIL_VERIFICATION_REQUIRED=false` is available only for local/test debugging. Production rejects disabled verification.
 
 ## Run locally
 

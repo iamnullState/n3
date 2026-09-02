@@ -50,7 +50,7 @@ final readonly class RegistrationService
             return new RegistrationOutcome();
         }
 
-        $token = self::randomToken();
+        $token = $this->config->emailVerificationRequired ? self::randomToken() : null;
         $userId = $this->transactions->run(function () use (
             $displayName,
             $email,
@@ -64,20 +64,42 @@ final readonly class RegistrationService
                 $normalizedEmail,
                 password_hash($password, PASSWORD_DEFAULT),
             );
-            $this->tokens->issue($userId, hash('sha256', $token), time() + $this->config->verificationTtl);
+            if ($this->config->emailVerificationRequired) {
+                if (!is_string($token)) {
+                    throw new \LogicException('Email verification token generation failed.');
+                }
+                $this->tokens->issue($userId, hash('sha256', $token), time() + $this->config->verificationTtl);
+            } else {
+                $this->users->markEmailVerified($userId);
+            }
 
             return $userId;
         });
 
-        $url = $this->config->appUrl . '/verify-email?token=' . rawurlencode($token);
-        $this->notifier->sendVerification(trim($email), trim($displayName), $url);
-        $this->events->record('registration', 'created', $normalizedEmail, $ip, $userId, $requestId);
+        if ($this->config->emailVerificationRequired) {
+            if (!is_string($token)) {
+                throw new \LogicException('Email verification token generation failed.');
+            }
+            $url = $this->config->appUrl . '/verify-email?token=' . rawurlencode($token);
+            $this->notifier->sendVerification(trim($email), trim($displayName), $url);
+        }
+        $this->events->record(
+            'registration',
+            $this->config->emailVerificationRequired ? 'created' : 'created_debug_verified',
+            $normalizedEmail,
+            $ip,
+            $userId,
+            $requestId,
+        );
 
         return new RegistrationOutcome();
     }
 
     public function resend(string $email, string $ip, string $requestId): bool
     {
+        if (!$this->config->emailVerificationRequired) {
+            return true;
+        }
         $normalizedEmail = $this->validator->normalizeEmail($email);
         $allowed = $this->limiter->allow('verify_resend_ip', 'ip:' . $ip, 10, 3600)
             && $this->limiter->allow('verify_resend_email', 'email:' . $normalizedEmail, 5, 3600);
@@ -107,6 +129,9 @@ final readonly class RegistrationService
 
     public function verify(string $tokenHash, string $ip, string $requestId): bool
     {
+        if (!$this->config->emailVerificationRequired) {
+            return false;
+        }
         if (!$this->limiter->allow('verify_token_ip', 'ip:' . $ip, 20, 3600)) {
             $this->events->record('email_verification', 'rate_limited', '', $ip, null, $requestId);
             return false;

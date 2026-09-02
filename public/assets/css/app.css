@@ -143,15 +143,11 @@ a {
     border-radius: 999px;
 }
 
-.hero {
-    width: min(62rem, calc(100% - 2rem));
-    min-height: calc(100vh - 5rem);
-    margin-inline: auto;
+.landing {
+    min-height: 100vh;
     display: grid;
-    align-content: center;
-    justify-items: center;
-    padding-block: 4rem 7rem;
-    text-align: center;
+    place-items: center;
+    padding: clamp(1rem, 3vw, 2rem);
 }
 
 .eyebrow {
@@ -159,25 +155,24 @@ a {
 }
 
 .greeting {
+    --greeting-shift: 2.75ch;
     margin: 0;
-    font-size: clamp(4rem, 13vw, 9.5rem);
-    font-weight: 900;
-    letter-spacing: -0.075em;
-    line-height: 0.88;
+    text-align: center;
+    white-space: nowrap;
+    letter-spacing: -0.1rem;
+    font-optical-sizing: auto;
 }
 
-.greeting-hello,
-.greeting-world {
+.greeting-word {
     display: inline-block;
 }
 
 .greeting-hello {
-    animation: greeting-shift 0.7s 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+    animation: greeting-shift 0.7s 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 .greeting-world {
-    color: var(--primary);
-    animation: greeting-fade 0.6s 0.95s ease both;
+    animation: greeting-fade 0.6s 1s ease both;
 }
 
 .hero-copy {
@@ -429,7 +424,7 @@ a {
 .page-lead-image img { display: block; width: 100%; height: auto; max-height: 34rem; object-fit: cover; border-radius: 1rem; }
 
 @keyframes greeting-shift {
-    from { transform: translateX(2.75ch); }
+    from { transform: translateX(var(--greeting-shift)); }
     to { transform: translateX(0); }
 }
 
@@ -477,5 +472,10 @@ a {
         animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;
         transition-duration: 0.01ms !important;
+    }
+
+    .greeting-hello,
+    .greeting-world {
+        animation: none !important;
     }
 }

@@ -14,7 +14,9 @@ $flash = is_array($viewData['flash'] ?? null) ? $viewData['flash'] : null;
     <article class="auth-card" aria-labelledby="register-title">
         <p class="eyebrow">Member access</p>
         <h1 id="register-title">Create an account</h1>
-        <p class="auth-intro">Register as a member, then verify your email before signing in.</p>
+        <p class="auth-intro"><?= ($viewData['emailVerificationRequired'] ?? true)
+            ? 'Register as a member, then verify your email before signing in.'
+            : 'Register as a member and sign in. Email verification is disabled for debugging.' ?></p>
         <?php if ($flash !== null): ?>
             <div class="alert alert-<?= $escape($flash['type']) ?>" role="status" tabindex="-1"><?= $escape($flash['message']) ?></div>
         <?php endif; ?>

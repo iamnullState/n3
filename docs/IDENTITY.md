@@ -4,7 +4,9 @@ Phase 3 is delivered as two reviewed slices. Slice 3A provides verified public r
 
 ## Registration and verification
 
-Public registrations always receive `role_key=member` and `account_status=pending_verification`. Browser input cannot select roles or status. A valid one-time verification token changes the account to `active` and records `email_verified_at`.
+Public registrations always receive `role_key=member`; browser input cannot select roles or status. With the default `EMAIL_VERIFICATION_REQUIRED=true`, accounts begin as `pending_verification` and a valid one-time token changes them to `active` while recording `email_verified_at`.
+
+For local/test debugging only, `EMAIL_VERIFICATION_REQUIRED=false` activates each newly created member in the registration transaction without issuing a token or notification. Email syntax validation, duplicate-account privacy, password policy, CSRF, rate limits, fixed member authority, and sanitized audit recording still apply. Production rejects this configuration at bootstrap. Changing the flag does not activate previously pending accounts.
 
 Verification tokens are 32 random bytes encoded for URLs. MariaDB stores only their SHA-256 hashes. Tokens expire after 24 hours by default, are single-use, and older unused tokens are revoked when a new one is issued. The initial email link is captured into the private session and redirected to a clean confirmation URL before the state-changing POST.
 
@@ -23,6 +25,7 @@ The local outbox is forbidden when registration is enabled in production. A prod
 | `APP_URL` | `http://127.0.0.1:8000` | Absolute origin without trailing slash. Production must use HTTPS. |
 | `SECURITY_HASH_KEY` | none | Required; at least 32 random bytes; used for keyed subject hashes. |
 | `REGISTRATION_ENABLED` | `false` | Explicit feature gate. |
+| `EMAIL_VERIFICATION_REQUIRED` | `true` | May be `false` only in `local` or `test`; production fails closed. |
 | `IDENTITY_MAIL_DRIVER` | `local_outbox` | Local/test only until another adapter is implemented. |
 | `EMAIL_VERIFICATION_TTL` | `86400` | Between 5 minutes and 7 days. |
 | `PASSWORD_RESET_TTL` | `1800` | Reset token lifetime; 5 minutes to 24 hours. |

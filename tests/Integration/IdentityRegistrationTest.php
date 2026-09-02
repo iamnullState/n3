@@ -137,6 +137,48 @@ final class IdentityRegistrationTest extends TestCase
         self::assertSame('active', $verified?->status);
     }
 
+    public function testDebugRegistrationActivatesWithoutTokenOrNotification(): void
+    {
+        $config = new IdentityConfig(
+            true,
+            'http://n3.test',
+            $this->config->securityHashKey,
+            mailDriver: 'local_outbox',
+            emailVerificationRequired: false,
+        );
+        $service = new RegistrationService(
+            $config,
+            new IdentityValidator(),
+            $this->users,
+            new PdoVerificationTokenRepository($this->connection),
+            new LocalOutboxNotifier($this->outbox),
+            new PdoRateLimiter($this->connection, $config->securityHashKey),
+            new PdoSecurityEventRecorder($this->connection, $config->securityHashKey),
+            new TransactionManager($this->connection),
+        );
+
+        self::assertTrue($service->register(
+            'Debug Member',
+            $this->email,
+            'correct horse battery staple',
+            'correct horse battery staple',
+            $this->ip,
+            '1234567890abcdef',
+        )->accepted());
+        $user = $this->users->findByNormalizedEmail($this->email);
+        self::assertSame('active', $user?->status);
+        self::assertTrue($user?->emailVerified ?? false);
+        self::assertSame([], glob($this->outbox . '/*.json') ?: []);
+        $tokenCount = $this->connection->prepare('SELECT COUNT(*) FROM email_verification_tokens WHERE user_id = :id');
+        $tokenCount->execute(['id' => $user?->id]);
+        self::assertSame(0, (int) $tokenCount->fetchColumn());
+        $outcome = $this->connection->prepare(
+            "SELECT outcome FROM security_events WHERE user_id = :id AND event_type = 'registration' ORDER BY id DESC LIMIT 1",
+        );
+        $outcome->execute(['id' => $user?->id]);
+        self::assertSame('created_debug_verified', $outcome->fetchColumn());
+    }
+
     public function testDuplicateRegistrationReturnsTheSameAcceptedOutcome(): void
     {
         $arguments = ['Member', $this->email, 'correct horse battery staple', 'correct horse battery staple', $this->ip, '1234567890abcdef'];

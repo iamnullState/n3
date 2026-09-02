@@ -22,11 +22,8 @@ final readonly class HomeController
     public function __invoke(Request $request): Response
     {
         return Response::html($this->view->render('home/index', [
-            'pageTitle' => $this->config['name'] . ' — Built once. Shaped for every site.',
-            'metaDescription' => 'N3 is a secure, modular, white-label CMS built with a focused PHP core.',
-            'appName' => $this->config['name'],
-            'version' => $this->config['version'],
-            'environment' => $this->config['environment'],
+            'pageTitle' => 'Hello, world',
+            'metaDescription' => 'Hello, world.',
         ]));
     }
 }
