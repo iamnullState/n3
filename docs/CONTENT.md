@@ -41,6 +41,7 @@ When Media is enabled, the same draft-only and optimistic-lock rule applies to a
 - `POST /admin/pages/{id}/unpublish`
 - `POST /admin/pages/{id}/media` — attach, change, or detach one lead image while draft; available only when Media is enabled
 - `GET /pages/{slug}` — published content only
+- `GET /` — the published `home` Page after Phase 8 scaffold installation; otherwise the static Core landing page
 - `GET /media/{id}.webp` — sanitized preview derivative only when attached to at least one published Page
 
 Stale lock versions and attempts to edit a published page return a conflict instead of overwriting data. Unknown, draft, noncanonical, and invalid public slugs return `404`.

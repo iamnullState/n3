@@ -6,6 +6,7 @@ namespace N3\App\Controller;
 
 use N3\App\Content\PageService;
 use N3\App\Content\PageMediaProvider;
+use N3\App\Site\SiteService;
 use N3\Core\Http\Request;
 use N3\Core\Http\Response;
 use N3\Core\View\View;
@@ -16,6 +17,7 @@ final readonly class PublicPageController
         private View $view,
         private PageService $pages,
         private ?PageMediaProvider $media = null,
+        private ?SiteService $site = null,
     )
     {
     }
@@ -30,12 +32,16 @@ final readonly class PublicPageController
             ]), 404);
         }
 
+        $identity = $this->site?->identity();
+
         return Response::html($this->view->render('content/page', [
-            'pageTitle' => $page->title . ' — N3',
+            'pageTitle' => $page->title . ' — ' . ($identity?->name ?? 'N3'),
             'metaDescription' => $page->excerpt,
             'page' => $page,
             'preview' => false,
             'media' => $this->media?->attachment($page->id),
+            'siteIdentity' => $identity,
+            'navigation' => $this->site?->publicNavigation() ?? [],
         ]));
     }
 }

@@ -24,6 +24,10 @@ final class RequestMetricClassifier
             return 'public.media';
         }
 
+        if ($path === '/site.css') {
+            return 'public.site';
+        }
+
         if ($path === '/register'
             || $path === '/login'
             || $path === '/logout'
@@ -45,6 +49,10 @@ final class RequestMetricClassifier
 
         if ($path === '/admin/media' || str_starts_with($path, '/admin/media/')) {
             return 'admin.media';
+        }
+
+        if ($path === '/admin/site') {
+            return 'admin.site';
         }
 
         if ($path === '/api/v1/system/ping') {

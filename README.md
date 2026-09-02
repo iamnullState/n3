@@ -15,7 +15,7 @@ The Secure Core Kernel milestone provides:
 - safe 404 and 500 views;
 - PHPUnit coverage for the request lifecycle, routing, escaping, and landing page.
 
-The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5 establishes trusted module boot, durable synchronization/jobs, private resource and transport contracts, and preview-first forward module migrations. Phase 6 adds opt-in aggregate Analytics and a data-free local `stdio` MCP server. Phase 7 adds a disabled-by-default Media module with secure JPEG/PNG ingestion plus one draft-controlled lead-image attachment per Page. Published Pages may retrieve only the attached, sanitized preview derivative; masters remain private. Deletion, galleries, inline images, broader formats, and remote storage remain deferred.
+The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5 establishes trusted module boot, durable synchronization/jobs, private resource and transport contracts, and preview-first forward module migrations. Phase 6 adds opt-in aggregate Analytics and a data-free local `stdio` MCP server. Phase 7 adds a disabled-by-default Media module with secure image ingestion and lifecycle controls. Phase 8 adds an idempotent default-site scaffold, audited white-label identity, editable Page navigation, and published Home routing with a safe fallback.
 
 ## Requirements
 
@@ -87,3 +87,4 @@ See `docs/WEBHOOKS.md` for signing, replay defense, endpoint restrictions, deliv
 See `docs/ANALYTICS.md` for the opt-in aggregate metric boundary, module deployment, reporting, retention, and deferred tracking features.
 See `docs/MCP.md` for the local protocol, trust, tool, rate-limit, enablement, and deferred capability boundaries.
 See `docs/MEDIA.md` for secure image ingestion, private storage, catalog, preview, backup, and deferred delivery boundaries.
+See `docs/SITE.md` for scaffold installation, site identity, navigation, public Home behavior, and recovery.

@@ -27,6 +27,9 @@ use N3\Core\Service\ServiceRegistry;
 use N3\Module\McpServer\McpServer;
 use N3\Module\McpServer\McpServerModule;
 use N3\Module\McpServer\McpStdioServer;
+use N3\App\Site\PdoSiteRepository;
+use N3\App\Site\SiteService;
+use N3\App\Site\SiteValidator;
 
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
@@ -52,6 +55,7 @@ if ($command === 'help') {
     fwrite(STDOUT, "  php bin/n3 analytics:summary [--days=7]\n");
     fwrite(STDOUT, "  php bin/n3 analytics:prune [--days=90] [--apply]\n");
     fwrite(STDOUT, "  php bin/n3 mcp:serve --stdio\n");
+    fwrite(STDOUT, "  php bin/n3 site:scaffold --admin-email=ADDRESS\n");
     exit(0);
 }
 
@@ -348,6 +352,31 @@ try {
             $password,
         );
         fwrite(STDOUT, sprintf("Created active verified administrator %d.\n", $id));
+        exit(0);
+    }
+
+    if ($command === 'site:scaffold') {
+        $adminEmail = null;
+        foreach ($argv as $argument) {
+            if (str_starts_with($argument, '--admin-email=')) {
+                $adminEmail = substr($argument, strlen('--admin-email='));
+            }
+        }
+        if (!is_string($adminEmail) || $adminEmail === '') {
+            throw new RuntimeException('The site scaffold requires --admin-email=ADDRESS for an active verified administrator.');
+        }
+        $runtime = require $root . '/config/database.php';
+        $connection = (new ConnectionFactory())->create($runtime);
+        $outcome = (new SiteService(
+            new PdoSiteRepository($connection, new TransactionManager($connection)),
+            new SiteValidator(),
+        ))->scaffold($adminEmail, bin2hex(random_bytes(8)));
+        fwrite(STDOUT, sprintf(
+            "Site scaffold complete: created_pages=%d existing_pages=%d created_settings=%s.\n",
+            $outcome->createdPages,
+            $outcome->existingPages,
+            $outcome->createdSettings ? 'yes' : 'no',
+        ));
         exit(0);
     }
 

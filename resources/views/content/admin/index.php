@@ -1,5 +1,5 @@
 <?php declare(strict_types=1); $pages = is_array($viewData['pages'] ?? null) ? $viewData['pages'] : []; $flash = is_array($viewData['flash'] ?? null) ? $viewData['flash'] : null; ?>
-<header class="site-header"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true">N3</span><span>N3</span></a><a href="/account">Account</a></header>
+<header class="site-header"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true">N3</span><span>N3</span></a><nav aria-label="Administration"><a href="/admin/site">Site</a><a href="/account">Account</a></nav></header>
 <main class="admin-page" id="main-content">
     <div class="admin-heading"><div><p class="eyebrow">Content</p><h1>Pages</h1><p>Draft, preview, and publish canonical pages.</p></div><a class="button" href="/admin/pages/create">Create page</a></div>
     <?php if ($flash !== null): ?><div class="alert alert-<?= $escape($flash['type']) ?>" role="status" tabindex="-1"><?= $escape($flash['message']) ?></div><?php endif; ?>

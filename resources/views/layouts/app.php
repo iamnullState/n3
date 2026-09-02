@@ -17,10 +17,11 @@ declare(strict_types=1);
         <title><?= $escape($viewData['pageTitle'] ?? 'N3') ?></title>
         <link rel="icon" href="data:,">
         <link rel="stylesheet" href="/assets/css/app.css">
+        <?php if (isset($viewData['siteIdentity'])): ?><link rel="stylesheet" href="/site.css"><?php endif; ?>
         <script src="/assets/javascript/identity.js" defer></script>
         <script src="/assets/javascript/content.js" defer></script>
     </head>
-    <body>
+    <body<?= isset($viewData['siteIdentity']) ? ' class="public-site"' : '' ?>>
         <a class="skip-link" href="#main-content">Skip to content</a>
         <?= $content ?>
     </body>

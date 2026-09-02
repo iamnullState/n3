@@ -7,6 +7,7 @@
     --muted: #5d6268;
     --line: #d6d7d9;
     --primary: #2469a4;
+    --brand-primary: #2457d6;
     --primary-soft: #5aa9e6;
     --focus: #8a3ffc;
     --radius: 1.25rem;
@@ -104,6 +105,15 @@ a {
     color: var(--background);
     letter-spacing: -0.08em;
 }
+
+.public-site .brand-mark { background: var(--brand-primary); color: #fff; }
+.brand-logo { display: block; width: auto; max-width: 8rem; height: 2.6rem; object-fit: contain; }
+.site-header nav { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+.site-header nav a[aria-current="page"] { text-decoration-thickness: 0.16rem; text-underline-offset: 0.35rem; }
+.navigation-editor { display: grid; gap: 1rem; }
+.navigation-editor fieldset { display: grid; grid-template-columns: minmax(0, 2fr) minmax(7rem, 1fr); gap: 1rem; border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; }
+.navigation-editor legend { padding-inline: 0.35rem; font-weight: 800; }
+.navigation-editor .checkbox-row { grid-column: 1 / -1; }
 
 .release-badge,
 .eyebrow {

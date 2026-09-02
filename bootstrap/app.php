@@ -39,7 +39,7 @@ set_error_handler(
 $view = new View($root . '/resources/views');
 $router = new Router();
 $logger = new FileLogger($root . '/storage/logs/app.log');
-$router->get('/', new HomeController($view, $config));
+$fallbackHome = new HomeController($view, $config);
 $router->get('/api/v1/system/ping', [new ApiSystemController(), 'ping']);
 $identityController = null;
 $identity = static function () use (&$identityController, $root, $view, $config) {
@@ -71,8 +71,29 @@ $content = static function () use (&$contentControllers, &$services, $root, $vie
         throw new LogicException('The Page Media service does not satisfy its contract.');
     }
 
-    return $contentControllers ??= ContentKernel::controllers($root, $view, $config['environment'], $media);
+    return $contentControllers ??= ContentKernel::controllers($root, $view, $config['environment'], $media, $config);
 };
+$publicContentControllers = null;
+$publicContent = static function () use (&$publicContentControllers, &$services, $root, $view, $config) {
+    $media = isset($services) && $services->has(PageMediaProvider::class)
+        ? $services->get(PageMediaProvider::class)
+        : null;
+    if ($media !== null && !$media instanceof PageMediaProvider) {
+        throw new LogicException('The Page Media service does not satisfy its contract.');
+    }
+
+    return $publicContentControllers ??= ContentKernel::publicControllers($root, $view, $config['environment'], $media, $config);
+};
+$router->get('/', static function ($request) use ($publicContent, $fallbackHome) {
+    try {
+        return $publicContent()['sitePublic']->home($request);
+    } catch (RuntimeException | PDOException) {
+        return $fallbackHome($request);
+    }
+});
+$router->get('/site.css', static fn ($request) => $publicContent()['sitePublic']->stylesheet($request));
+$router->get('/admin/site', static fn ($request) => $content()['siteAdmin']->edit($request));
+$router->post('/admin/site', static fn ($request) => $content()['siteAdmin']->update($request));
 $router->get('/admin/pages', static fn ($request) => $content()['admin']->index($request));
 $router->get('/admin/pages/create', static fn ($request) => $content()['admin']->create($request));
 $router->post('/admin/pages', static fn ($request) => $content()['admin']->store($request));
@@ -82,7 +103,7 @@ $router->get('/admin/pages/{id}/preview', static fn ($request) => $content()['ad
 $router->post('/admin/pages/{id}/publish', static fn ($request) => $content()['admin']->publish($request));
 $router->post('/admin/pages/{id}/unpublish', static fn ($request) => $content()['admin']->unpublish($request));
 $router->post('/admin/pages/{id}/media', static fn ($request) => $content()['admin']->updateMedia($request));
-$router->get('/pages/{slug}', static fn ($request) => $content()['public']->show($request));
+$router->get('/pages/{slug}', static fn ($request) => $publicContent()['public']->show($request));
 
 $services = new ServiceRegistry();
 $services->register(Router::class, $router);

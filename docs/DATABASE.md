@@ -85,6 +85,8 @@ Phase 7A's optional Media module owns prefixed asset, upload-limit, and event ta
 
 Phase 7B adds a Media-owned one-row-per-Page attachment table with foreign keys to Core Pages and sanitized Media assets. It stores only Page ID, random asset ID, required alt text, and timestamps. Attachment mutations lock the draft Page version and write controlled content events in the same transaction. The public authorization query joins attachments to published Pages by indexed keys; public URLs, cache state, source paths, labels, and image bytes are not persisted.
 
+Phase 8 adds one `site_settings` singleton, ordered `site_navigation_items` Page references, and sanitized `site_events`. Settings and navigation updates use an optimistic lock and one transaction. Scaffold installation requires an existing active, verified administrator and is idempotent by unique Page slug, singleton ID, and unique navigation Page reference. See [SITE.md](SITE.md).
+
 Public registration must never accept `account_status` or `role_key` from the request. `PdoUserRepository::createPending()` fixes these values to `pending_verification` and `member`.
 
 ## Database accounts
@@ -109,4 +111,4 @@ Unit tests validate configuration and migration definitions without a database. 
 
 Integration tests must never target staging or production data.
 
-Observed after Phase 6C on 2026-09-01 against both MariaDB 11.8.9 and 12.3.2 with PHP 8.5.9: 175 tests, 603 assertions, 174 passed, and one environment-specific unit test was skipped because `pdo_mysql` was present. Phase 6C itself adds no database access or schema.
+Observed after Phase 8 on 2026-09-02 with PHP 8.5.9: MariaDB 11.8.9 passed 216 tests and 917 assertions with one expected driver-presence skip; MariaDB 12.3.2 passed 216 tests and 871 assertions with seven version-conditioned skips. Coverage includes fresh/repeated/partial scaffold installation, forced transaction rollback, settings/navigation persistence, audit events, public filtering, and runtime schema-privilege denial.
