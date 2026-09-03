@@ -87,6 +87,7 @@ final readonly class TableNames
         'site_event_actor_fk' => true,
         'site_event_time_index' => true,
         'installation_state_singleton' => true,
+        'installation_state_status_check' => true,
         'uq_media_public_id' => true,
         'idx_media_created' => true,
         'idx_media_events_time' => true,

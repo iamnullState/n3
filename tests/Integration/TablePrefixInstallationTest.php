@@ -94,7 +94,7 @@ final class TablePrefixInstallationTest extends TestCase
         $root = dirname(__DIR__, 2);
         $runner = new MigrationRunner($this->connection, $root . '/database/migrations');
 
-        self::assertCount(9, $runner->migrate());
+        self::assertCount(10, $runner->migrate());
         self::assertSame([], $runner->migrate());
         self::assertNotFalse($this->connection->query('SELECT COUNT(*) FROM users')->fetchColumn());
         self::assertSame(

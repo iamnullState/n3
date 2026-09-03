@@ -24,7 +24,7 @@ use N3\Core\View\View;
 
 $root = dirname(__DIR__);
 
-require $root . '/vendor/autoload.php';
+require_once $root . '/vendor/autoload.php';
 
 /** @var array{name: string, version: string, environment: string, debug: bool, timezone: string} $config */
 $config = require $root . '/config/app.php';

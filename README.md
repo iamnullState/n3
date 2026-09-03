@@ -1,17 +1,17 @@
 # N3 Core
 
 ![Core version 0.2.0](https://img.shields.io/badge/core-0.2.0-2457D6)
-![Next phase 10B](https://img.shields.io/badge/next_phase-10B-8A3FFC)
+![Next decision Phase 11](https://img.shields.io/badge/next_decision-Phase_11-8A3FFC)
 ![PHP 8.5 or newer](https://img.shields.io/badge/PHP-%3E%3D8.5-777BB4?logo=php&logoColor=white)
 ![MariaDB 11.8 and 12.3](https://img.shields.io/badge/MariaDB-11.8_%7C_12.3-003545?logo=mariadb&logoColor=white)
-![Tests 243 passing](https://img.shields.io/badge/tests-243_passing-2EA44F)
+![Tests 259 passing](https://img.shields.io/badge/tests-259_passing-2EA44F)
 ![License proprietary](https://img.shields.io/badge/license-proprietary-lightgrey)
 
 N3 is a framework-free PHP modular-monolith foundation for an independently installed, white-label CMS.
 
 ## Current milestone
 
-Phase 9 Blog and the installer prerequisites are committed. Phase 10A's immutable table-prefix foundation is implemented and validated; Phase 10B's browser installer is next. The Secure Core Kernel provides:
+Phase 10B's protected shared-hosting browser installer is implemented on the immutable Phase 10A table-prefix foundation. The Secure Core Kernel provides:
 
 - validated environment configuration;
 - a single public entry point;
@@ -24,7 +24,7 @@ Phase 9 Blog and the installer prerequisites are committed. Phase 10A's immutabl
 
 The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5 establishes trusted module boot, durable synchronization/jobs, private resource and transport contracts, and preview-first forward module migrations. Phase 6 adds opt-in aggregate Analytics and a data-free local `stdio` MCP server. Phase 7 adds a disabled-by-default Media module with secure image ingestion and lifecycle controls. Phase 8 adds an idempotent default-site scaffold, audited white-label identity, editable Page navigation, and published Home routing with a safe fallback. Phase 9 adds a disabled-by-default Blog module with secure administrator authoring and bounded public retrieval.
 
-Latest verification on 2026-09-02: host PHP passed 243 tests/673 assertions; MariaDB 11.8 passed 243/1,099 and MariaDB 12.3 passed 243/1,053. Environment-dependent skips are documented in the runbook.
+Latest verification on 2026-09-02: host PHP passed 259 tests/730 assertions; MariaDB 11.8 passed 259/1,172 and MariaDB 12.3 passed 259/1,126. Environment-dependent skips are documented in the runbook.
 
 ## Requirements
 
@@ -45,7 +45,7 @@ Configuration is read from real environment variables. `.env.example` documents 
 
 `DB_TABLE_PREFIX` defaults to empty. A non-empty value must be 2–24 lowercase ASCII characters, begin with a letter, and end with `_` (for example, `client_`). Set it before the first migration and never change it afterward. N3 records it in installation state and rejects a mismatch.
 
-There is no browser installer yet. Current setup remains CLI-driven: configure the environment, apply migrations, create the first administrator, and optionally run `site:scaffold`. The scaffold is never implicit; without it, `/` retains the neutral fallback.
+Fresh installations now enter the neutral `/install` workflow before normal application composition. Configure the hosting environment, authorize with the independent one-time installer token, review the read-only preflight, run migrations, and create the first administrator. Completion is persisted in MariaDB and a private lock; installer routes then close and redirect to `/login`. Remove `INSTALL_TOKEN` after completion. See `docs/INSTALLATION.md`.
 
 ## Run locally
 
@@ -93,6 +93,7 @@ bin/                Project CLI entry points
 ```
 
 See `docs/DATABASE.md` for the persistence contract and `docs/DATABASE_SECURITY.md` for database security controls and remaining production gates.
+See `docs/INSTALLATION.md` for shared-hosting preflight, browser setup, completion, and recovery.
 See `docs/IDENTITY.md` for registration, verification, session, rate-limit, and local-outbox behavior.
 See `docs/CONTENT.md` for the Page model, lifecycle, authorization, routes, audit behavior, and quality gates.
 See `docs/MODULES.md` for the in-process trust model, service and event contracts, module manifest/lifecycle, failure semantics, and deferred external boundaries.

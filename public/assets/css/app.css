@@ -296,6 +296,17 @@ a {
 .alert-success { background: rgb(34 197 94 / 0.12); }
 .alert-warning { background: rgb(245 158 11 / 0.14); }
 .auth-button { width: 100%; border: 0; cursor: pointer; }
+.install-page { padding-top: clamp(2rem, 6vw, 5rem); }
+.install-page .admin-heading { align-items: center; }
+.install-section { margin-top: 1.5rem; }
+.install-section h2, .publication-panel h2 { margin-top: 0; }
+.install-checks { display: grid; gap: 0.75rem; padding: 0; list-style: none; }
+.install-checks li { display: flex; align-items: center; gap: 0.75rem; }
+.install-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1.5rem; }
+.install-details div { min-width: 0; padding: 0.75rem; border: 1px solid var(--line); border-radius: 0.75rem; }
+.install-details dt { color: var(--muted); font-size: 0.78rem; font-weight: 800; text-transform: uppercase; }
+.install-details dd { margin: 0.2rem 0 0; overflow-wrap: anywhere; font-weight: 700; }
+.button:disabled { cursor: not-allowed; opacity: 0.55; transform: none; box-shadow: none; }
 
 .admin-page,
 .public-page {
@@ -453,6 +464,7 @@ a {
     .vitals-grid { grid-template-columns: 1fr; }
     .media-grid { grid-template-columns: 1fr; }
     .blog-list { grid-template-columns: 1fr; }
+    .install-details { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 48.001rem) and (max-width: 70rem) {

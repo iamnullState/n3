@@ -13,7 +13,7 @@ Take and verify a database backup, apply Core migrations, and bootstrap the firs
 php bin/n3 site:scaffold --admin-email=admin@example.test
 ```
 
-The email must identify the existing active, verified `admin`. Passwords are never accepted by this command. It creates published `home`, `about`, `contact`, `privacy-policy`, and `terms` Pages only when each slug is absent, creates the singleton settings row only when absent, and adds missing navigation entries. Re-running it is safe and does not duplicate or overwrite Pages, settings, or navigation. The planned browser installer will not run this command automatically.
+The email must identify the existing active, verified `admin`. Passwords are never accepted by this command. It creates published `home`, `about`, `contact`, `privacy-policy`, and `terms` Pages only when each slug is absent, creates the singleton settings row only when absent, and adds missing navigation entries. Re-running it is safe and does not duplicate or overwrite Pages, settings, or navigation. The browser installer does not run this command automatically.
 
 The seeded policy text is a placeholder, not legal advice. Review it before production use. The Contact Page does not submit or send mail.
 

@@ -13,7 +13,11 @@ final class NativeSessionStore implements SessionStore
     public function __construct(
         private readonly string $path,
         private readonly bool $secureCookie,
+        private readonly string $name = 'n3_session',
     ) {
+        if (preg_match('/^[A-Za-z][A-Za-z0-9_]{0,31}$/D', $name) !== 1) {
+            throw new RuntimeException('Session names must be 1-32 safe ASCII characters.');
+        }
     }
 
     public function get(string $key, mixed $default = null): mixed
@@ -71,7 +75,7 @@ final class NativeSessionStore implements SessionStore
 
         chmod($this->path, 0700);
         session_save_path($this->path);
-        session_name('n3_session');
+        session_name($this->name);
         session_set_cookie_params([
             'lifetime' => 0,
             'path' => '/',
