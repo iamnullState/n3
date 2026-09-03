@@ -35,11 +35,11 @@ N3 does not load `.env` files. `.env.example` documents keys without being a sec
 
 ## Docker test environment
 
-The local Docker environment is disposable test infrastructure, not a production deployment definition. It binds MariaDB only to `127.0.0.1:3307`, keeps data in a named volume, and creates separate runtime and migration accounts during first initialization. The PHP test container receives only test account credentials and mounts only the files needed by the suite; it cannot read the root password or `.env.docker`.
+The local Docker environment is disposable test infrastructure, not a production deployment definition. It binds MariaDB only to `127.0.0.1:3307`, keeps data in a named volume, and creates separate runtime, migration, and read-only backup accounts during first initialization. The PHP test container receives only test account credentials and mounts only the files needed by the suite; it cannot read the root password or `.env.docker`.
 
 ```bash
 cp .env.docker.example .env.docker
-# Replace all three example passwords before starting the service.
+# Replace every example password before starting the service.
 docker compose --env-file .env.docker up -d --wait mariadb
 docker compose --env-file .env.docker --profile test build php-test
 docker compose --env-file .env.docker --profile test run --rm php-test

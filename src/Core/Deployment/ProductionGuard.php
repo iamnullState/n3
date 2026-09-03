@@ -59,6 +59,12 @@ final class ProductionGuard
             && (self::value('DB_MIGRATION_USER') !== null || self::value('DB_MIGRATION_PASSWORD') !== null)) {
             $violations[] = 'migration credentials must not be available to the web runtime';
         }
+        if (self::value('BACKUP_ENCRYPTION_KEY') !== null) {
+            $violations[] = 'backup encryption key must not be available to the web runtime';
+        }
+        if (self::value('DB_BACKUP_USER') !== null || self::value('DB_BACKUP_PASSWORD') !== null) {
+            $violations[] = 'backup credentials must not be available to the web runtime';
+        }
         $databaseHost = strtolower(self::value('DB_HOST') ?? '127.0.0.1');
         if (!in_array($databaseHost, ['127.0.0.1', 'localhost', '::1'], true)) {
             $violations[] = 'remote database hosts require a future TLS configuration';

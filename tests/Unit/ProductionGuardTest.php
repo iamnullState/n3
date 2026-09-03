@@ -36,6 +36,9 @@ final class ProductionGuardTest extends TestCase
             'INSTALL_TOKEN' => null,
             'DB_MIGRATION_USER' => null,
             'DB_MIGRATION_PASSWORD' => null,
+            'BACKUP_ENCRYPTION_KEY' => null,
+            'DB_BACKUP_USER' => null,
+            'DB_BACKUP_PASSWORD' => null,
             'DB_HOST' => 'localhost',
         ]);
     }
@@ -102,6 +105,8 @@ final class ProductionGuardTest extends TestCase
             'INSTALL_REOPEN' => 'true',
             'INSTALL_TOKEN' => $secret,
             'DB_MIGRATION_USER' => 'n3_migrator',
+            'BACKUP_ENCRYPTION_KEY' => 'private-backup-key-material',
+            'DB_BACKUP_USER' => 'n3_backup',
             'DB_HOST' => 'database.example.test',
         ]);
 
@@ -111,6 +116,8 @@ final class ProductionGuardTest extends TestCase
         } catch (RuntimeException $exception) {
             self::assertStringContainsString('APP_URL must use HTTPS', $exception->getMessage());
             self::assertStringContainsString('REGISTRATION_ENABLED must remain false', $exception->getMessage());
+            self::assertStringContainsString('backup encryption key must not be available', $exception->getMessage());
+            self::assertStringContainsString('backup credentials must not be available', $exception->getMessage());
             self::assertStringContainsString('remote database hosts require', $exception->getMessage());
             self::assertStringNotContainsString($secret, $exception->getMessage());
         }
@@ -155,6 +162,9 @@ final class ProductionGuardTest extends TestCase
             'INSTALL_TOKEN',
             'DB_MIGRATION_USER',
             'DB_MIGRATION_PASSWORD',
+            'BACKUP_ENCRYPTION_KEY',
+            'DB_BACKUP_USER',
+            'DB_BACKUP_PASSWORD',
             'DB_HOST',
         ];
     }

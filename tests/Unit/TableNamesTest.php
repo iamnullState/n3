@@ -11,6 +11,27 @@ use PHPUnit\Framework\TestCase;
 
 final class TableNamesTest extends TestCase
 {
+    public function testManagedBackupTableInventoryUsesTheImmutablePrefix(): void
+    {
+        $tables = (new TableNames('site_'))->managedTables();
+
+        self::assertContains('site_users', $tables);
+        self::assertContains('site_installation_state', $tables);
+        self::assertContains('site_m_n3_blog_0356bd27_posts', $tables);
+        self::assertNotContains('site_users_email_normalized_unique', $tables);
+        self::assertSame(count($tables), count(array_unique($tables)));
+    }
+
+    public function testCoreBackupInventoryExcludesOptionalModuleTables(): void
+    {
+        $tables = (new TableNames('site_'))->coreTables();
+
+        self::assertContains('site_installation_state', $tables);
+        self::assertContains('site_site_events', $tables);
+        self::assertNotContains('site_m_n3_blog_0356bd27_posts', $tables);
+        self::assertNotContains('site_m_n3_media_034553f6_assets', $tables);
+    }
+
     public function testEmptyPrefixPreservesExistingIdentifiers(): void
     {
         $names = new TableNames();

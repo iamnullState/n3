@@ -4,7 +4,7 @@
 ![Apache or LiteSpeed](https://img.shields.io/badge/web-Apache_%7C_LiteSpeed-6F42C1)
 ![Production rehearsal required](https://img.shields.io/badge/production-rehearsal_required-D73A49)
 
-Phase 11A defines N3's first production deployment baseline for Apache 2.4-compatible and LiteSpeed shared hosting. It is a secure procedure and automated configuration preflight, not certification of an untested provider. Backup/restore automation, production mail, monitoring, scheduled tasks, and a rehearsed staging release remain later gates.
+Phase 11A defines N3's first production deployment baseline for Apache 2.4-compatible and LiteSpeed shared hosting. It is a secure procedure and automated configuration preflight, not certification of an untested provider. Phase 11B adds encrypted coordinated backup and clean-target restore commands. Production mail, monitoring, scheduled tasks, and a full provider rehearsal remain later gates.
 
 ## Hosting contract
 
@@ -48,7 +48,7 @@ Do not upload development dependencies, `.env`, `.git/`, tests, Docker files, da
 
 ## Fresh installation
 
-1. Create distinct runtime and migration database accounts using the grants in `DATABASE_SECURITY.md`.
+1. Create distinct runtime, migration, and read-only backup database accounts using the grants in `DATABASE_SECURITY.md`.
 2. Upload the reviewed release, install production Composer dependencies, set permissions, and point the document root at `public/`.
 3. Configure the production environment plus a temporary independent `INSTALL_TOKEN` and migration credentials.
 4. Visit `/install` over HTTPS, review preflight, apply migrations, and create the first administrator.
@@ -58,7 +58,7 @@ Do not upload development dependencies, `.env`, `.git/`, tests, Docker files, da
 
 ## Upgrade procedure
 
-1. Put the site into the hosting provider's maintenance/offline mode and take a verified backup. Phase 11B will define N3-owned backup and restore operations; until then, use a provider procedure already tested for this installation.
+1. Put the site into the hosting provider's maintenance/offline mode and create, verify, and copy off-host a Phase 11B encrypted bundle as documented in `BACKUPS.md`.
 2. Upload the new release without replacing private `storage/` or production secrets.
 3. Run the optimized Composer install above.
 4. Temporarily inject migration credentials into the CLI environment. Review and apply in order:
@@ -87,7 +87,7 @@ Core and module migrations are forward-only after identity or content exists. Do
 ## Remaining production gates
 
 - Verify this baseline on the selected shared host and record its PHP handler, `.htaccess` behavior, HTTPS variables, permissions, limits, and logs.
-- Implement and rehearse database plus private-storage backup and restore.
+- Rehearse Phase 11B backup/restore on the selected provider and record recovery time plus acceptance evidence.
 - Select a production mail adapter before enabling registration or recovery delivery.
 - Define scheduled pruning/job execution, monitoring, alerting, and incident ownership.
 - Rehearse a complete staging install, upgrade, failure, and recovery before live traffic.

@@ -36,13 +36,13 @@ This document defines the security boundary for N3's PDO/MariaDB foundation. It 
 | Root/bootstrap | Local container initialization or controlled database administration only | Web requests, application runtime, automated tests, or routine migrations. |
 | Migration | Required DDL plus migration-table DML during an approved release | Web runtime, public request handling, account administration, or `GRANT`/`CREATE USER`. |
 | Runtime | Application DML needed by repositories | DDL, MariaDB user administration, system privilege tables, backup administration, or granting access. |
-| Backup | Future read/backup operations only | Application queries, schema migrations, or restore operations unless separately approved. |
+| Backup | `SELECT` on the installation database for private CLI backup creation only | Web/application queries, DML, DDL, grants, or restore operations. |
 
 Every installation must use distinct credentials. Staging, test, and production credentials must never be shared. A module must use Core repositories or an explicitly reviewed service contract; it must not introduce independent root or migration credentials.
 
 ### Current Docker grants
 
-The local bootstrap script grants the runtime account `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on the disposable test schema. It grants the migration account the same DML plus `CREATE`, `ALTER`, `DROP`, `INDEX`, and `REFERENCES`. Neither account receives global privileges, account-management privileges, or `GRANT OPTION`.
+The local bootstrap script grants the runtime account `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on the disposable test schema. It grants the migration account the same DML plus `CREATE`, `ALTER`, `DROP`, `INDEX`, and `REFERENCES`. The backup account receives `SELECT` only. None receives global privileges, account-management privileges, or `GRANT OPTION`.
 
 Because application tables are created after container initialization, the local runtime grant currently applies schema-wide and therefore includes the `schema_migrations` table. This is an accepted local-test limitation, not the production target. Production provisioning must apply table-specific runtime grants after migrations, keep migration history inaccessible to the web runtime, and update grants deliberately when a module adds tables.
 
@@ -65,7 +65,7 @@ A future staging or production environment must:
 
 - `.env.docker` is ignored by Git and is for disposable local credentials only.
 - Example passwords are rejected by the initialization script; root, runtime, and migration passwords must be distinct.
-- The PHP test container receives only runtime and migration test credentials. Its mounts exclude `.env.docker`, and it does not receive the root password.
+- The PHP test container receives runtime, migration, and read-only backup test credentials. Its mounts exclude `.env.docker`, and it does not receive the root password.
 - Production secrets must come from the selected platform's secret manager or protected service environment, not a committed file, image layer, public document root, or command history.
 - Passwords, DSNs containing credentials, access tokens, and password hashes must not be logged.
 
@@ -100,7 +100,7 @@ Prepared statements do not replace input validation. Identity use cases enforce 
 - Migration credentials must not be available to the web worker.
 - A schema rollback is not a backup strategy.
 
-Before any production migration, require a current backup, a tested restore procedure, a reviewed forward migration, a compatibility assessment, an outage expectation, and a documented recovery decision. Backup and restore automation is not implemented yet.
+Before any production migration, require a current authenticated Phase 11B bundle, a tested clean-target restore procedure, a reviewed forward migration, a compatibility assessment, an outage expectation, and a documented recovery decision. The exact backup and restore procedure is in `BACKUPS.md`.
 
 ## Logging and incident response
 
@@ -122,7 +122,7 @@ The PHPUnit suite verifies:
 
 - DSN construction excludes passwords and rejects identifier injection;
 - invalid hosts, ports, database names, usernames, and empty passwords fail closed;
-- runtime and migration credentials load separately;
+- runtime, migration, and read-only backup credentials load separately;
 - connection failures expose only a controlled message;
 - transactions commit, roll back, preserve the original exception, and reject nesting;
 - migrations create the expected constraints and enforce normalized-email uniqueness;
@@ -145,7 +145,7 @@ docker compose --env-file .env.docker --profile test run --rm php-test
 - Select the production runtime, network, secret manager, and MariaDB topology.
 - Add verified TLS configuration to `ConnectionFactory`.
 - Provision table-specific runtime grants after migrations and deny runtime access to migration history.
-- Design and test encrypted backup, restore, retention, and deletion procedures.
+- Rehearse encrypted backup, restore, retention, and deletion procedures on the selected provider and maintain an independently verified off-host copy.
 - Define database audit logging, monitoring, alert thresholds, and incident ownership.
 - Define credential rotation automation and emergency account revocation.
 - Define data retention, export, deletion, and privacy requirements for user records.
@@ -172,6 +172,8 @@ Phase 10A keeps `DB_TABLE_PREFIX` read-only and outside request input. One exact
 Phase 10B keeps database passwords and `SECURITY_HASH_KEY` out of responses, logs, sessions, and forms. The independent `INSTALL_TOKEN` is accepted only by the authorization POST, compared exactly, discarded on redirect, and represented afterward only by a private session authorization flag. Installer mutations use intent-bound CSRF, session fixed-window throttling, generic public failures, sanitized exception-class logs, and installation-scoped advisory locks. Separate runtime/migration usernames are a preflight gate. Completion is durable in MariaDB plus a `0600` private lock, clears the installer session, and closes all installer routes unless explicit read-only reopen mode is configured.
 
 Phase 11A removes migration credentials from the normal production web-process trust boundary. Web bootstrap fails closed if either migration credential remains available; installation and the read-only deployment preflight may receive them temporarily in their isolated execution contexts. Production also refuses remote database hosts because certificate-verified PDO TLS configuration is not implemented. `production:check` confirms distinct accounts, both temporary connections, current Core/module migrations, installation completion, and synchronized module lifecycle. Existing MariaDB integration tests remain the executable proof that the runtime account cannot perform DDL; provider grants must still be reviewed after every schema expansion.
+
+Phase 11B adds a third database identity for backup creation. `DB_BACKUP_*` receives `SELECT` only and is available solely to private CLI backup jobs. Restore continues to require temporary migration credentials and refuses a target containing any managed N3 table. Database dumps stream through authenticated encryption without a plaintext dump file; credentials use temporary `0600` MariaDB option files and never command arguments. Production web bootstrap fails closed if backup credentials or the independent backup encryption key are present. Maintenance mode is an operator-confirmed consistency boundary because a MariaDB transaction cannot atomically snapshot filesystem data.
 
 Phase 6B reporting requires an active administrator session and receives only fixed authority from Core's lazy principal provider; Analytics receives no account ID or profile. Report periods and grouping are allowlisted, responses are `no-store`/`noindex`, and failures expose neither SQL nor exception messages. The report connection uses the runtime DML account and performs no DDL. Dashboard output remains sensitive operational data even though it contains no visitor-level records.
 

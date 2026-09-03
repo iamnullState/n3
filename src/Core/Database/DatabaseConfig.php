@@ -51,6 +51,11 @@ final readonly class DatabaseConfig
         return self::fromCredentialKeys('DB_MIGRATION_USER', 'DB_MIGRATION_PASSWORD');
     }
 
+    public static function fromBackupEnvironment(): self
+    {
+        return self::fromCredentialKeys('DB_BACKUP_USER', 'DB_BACKUP_PASSWORD');
+    }
+
     private static function fromCredentialKeys(string $userKey, string $passwordKey): self
     {
         $port = filter_var(

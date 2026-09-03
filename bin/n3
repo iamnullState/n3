@@ -11,6 +11,8 @@ use N3\App\Identity\PdoRateLimiter;
 use N3\App\Identity\PdoUserRepository;
 use N3\App\Identity\PdoVerificationTokenRepository;
 use N3\App\Install\PdoInstallationStateRepository;
+use N3\Core\Backup\BackupService;
+use N3\Core\Backup\MariaDbCliBackupDriver;
 use N3\Core\Database\MigrationRunner;
 use N3\Core\Database\TransactionManager;
 use N3\Core\Deployment\ProductionReadiness;
@@ -59,12 +61,123 @@ if ($command === 'help') {
     fwrite(STDOUT, "  php bin/n3 mcp:serve --stdio\n");
     fwrite(STDOUT, "  php bin/n3 site:scaffold --admin-email=ADDRESS\n");
     fwrite(STDOUT, "  php bin/n3 production:check\n");
+    fwrite(STDOUT, "  php bin/n3 backup:create --maintenance-confirmed\n");
+    fwrite(STDOUT, "  php bin/n3 backup:verify --id=BACKUP_ID\n");
+    fwrite(STDOUT, "  php bin/n3 backup:prune [--days=30] [--apply]\n");
+    fwrite(STDOUT, "  php bin/n3 backup:restore --id=BACKUP_ID [--storage-target=PATH] [--apply --maintenance-confirmed --clean-target-confirmed]\n");
     exit(0);
 }
 
 try {
     $app = require $root . '/config/app.php';
     date_default_timezone_set($app['timezone']);
+
+    if (str_starts_with($command, 'backup:')) {
+        $option = static function (string $name) use ($argv): ?string {
+            $prefix = '--' . $name . '=';
+            foreach ($argv as $argument) {
+                if (str_starts_with($argument, $prefix)) {
+                    return substr($argument, strlen($prefix));
+                }
+            }
+
+            return null;
+        };
+        $apply = in_array('--apply', $argv, true);
+        if ($command === 'backup:create' && !in_array('--maintenance-confirmed', $argv, true)) {
+            throw new RuntimeException('Backup creation requires --maintenance-confirmed to coordinate database and private files.');
+        }
+        if ($command === 'backup:restore' && $apply
+            && (!in_array('--maintenance-confirmed', $argv, true)
+                || !in_array('--clean-target-confirmed', $argv, true))) {
+            throw new RuntimeException('Restore apply requires --maintenance-confirmed and --clean-target-confirmed.');
+        }
+        $backup = require $root . '/config/backups.php';
+        if ($command === 'backup:verify' || $command === 'backup:prune') {
+            $service = new BackupService($root, $app['version'], $backup);
+        } else {
+            $database = $command === 'backup:create'
+                ? require $root . '/config/backup_database.php'
+                : require $root . '/config/migrations.php';
+            $connection = (new ConnectionFactory())->create($database);
+            $service = new BackupService(
+                $root,
+                $app['version'],
+                $backup,
+                $database,
+                $connection,
+                new MariaDbCliBackupDriver($backup->dumpBinary, $backup->clientBinary),
+            );
+        }
+
+        if ($command === 'backup:create') {
+            $result = $service->create();
+            fwrite(STDOUT, sprintf(
+                "Created encrypted backup %s: tables=%d files=%d plaintext_bytes=%d.\n",
+                $result['id'],
+                $result['database_tables'],
+                $result['storage_files'],
+                $result['plaintext_bytes'],
+            ));
+            exit(0);
+        }
+
+        if ($command === 'backup:verify') {
+            $id = $option('id');
+            if ($id === null) {
+                throw new RuntimeException('Backup verification requires --id=BACKUP_ID.');
+            }
+            $manifest = $service->verify($id);
+            fwrite(STDOUT, sprintf(
+                "Verified encrypted backup %s: tables=%d files=%d.\n",
+                $id,
+                count($manifest['database']['tables']),
+                count($manifest['storage']),
+            ));
+            exit(0);
+        }
+
+        if ($command === 'backup:prune') {
+            $days = $backup->retentionDays;
+            $daysOption = $option('days');
+            if ($daysOption !== null) {
+                if (preg_match('/^[1-9][0-9]{0,3}$/D', $daysOption) !== 1 || (int) $daysOption > 3650) {
+                    throw new RuntimeException('--days must be between 1 and 3650.');
+                }
+                $days = (int) $daysOption;
+            }
+            $ids = $service->pruneCandidates($days);
+            foreach ($ids as $id) {
+                fwrite(STDOUT, $id . "\n");
+            }
+            if (!$apply) {
+                fwrite(STDOUT, sprintf("eligible=%d; preview only, rerun with --apply after confirming an off-host copy.\n", count($ids)));
+                exit($ids === [] ? 0 : 1);
+            }
+            fwrite(STDOUT, sprintf("Pruned %d authenticated backup bundle(s).\n", $service->prune($ids)));
+            exit(0);
+        }
+
+        if ($command === 'backup:restore') {
+            $id = $option('id');
+            if ($id === null) {
+                throw new RuntimeException('Backup restore requires --id=BACKUP_ID.');
+            }
+            $target = $option('storage-target') ?? $root . '/storage';
+            $result = $service->restore($id, $target, $apply);
+            fwrite(STDOUT, sprintf(
+                "Restore %s for %s: tables=%d files=%d target_storage=%s.\n",
+                $apply ? 'completed' : 'preview',
+                $id,
+                $result['database_tables'],
+                $result['storage_files'],
+                $target,
+            ));
+            exit(0);
+        }
+
+        throw new RuntimeException(sprintf('Unknown backup command: %s', $command));
+    }
 
     if ($command === 'production:check') {
         $runtime = require $root . '/config/database.php';

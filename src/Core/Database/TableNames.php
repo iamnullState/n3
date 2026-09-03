@@ -8,6 +8,57 @@ final readonly class TableNames
 {
     public const MAX_PREFIX_BYTES = 24;
 
+    /** @var list<string> */
+    private const TABLES = [
+        'schema_migrations',
+        'installation_state',
+        'users',
+        'email_verification_tokens',
+        'rate_limit_buckets',
+        'security_events',
+        'password_reset_tokens',
+        'pages',
+        'content_events',
+        'modules',
+        'module_events',
+        'jobs',
+        'job_events',
+        'webhook_receipts',
+        'module_migrations',
+        'site_settings',
+        'site_navigation_items',
+        'site_events',
+        'm_n3_analytics_feadc5f8_hourly_metrics',
+        'm_n3_media_034553f6_assets',
+        'm_n3_media_034553f6_events',
+        'm_n3_media_034553f6_upload_limits',
+        'm_n3_media_034553f6_page_attachments',
+        'm_n3_blog_0356bd27_posts',
+        'm_n3_blog_0356bd27_events',
+    ];
+
+    /** @var list<string> */
+    private const CORE_TABLES = [
+        'schema_migrations',
+        'installation_state',
+        'users',
+        'email_verification_tokens',
+        'rate_limit_buckets',
+        'security_events',
+        'password_reset_tokens',
+        'pages',
+        'content_events',
+        'modules',
+        'module_events',
+        'jobs',
+        'job_events',
+        'webhook_receipts',
+        'module_migrations',
+        'site_settings',
+        'site_navigation_items',
+        'site_events',
+    ];
+
     /** @var array<string, true> */
     private const IDENTIFIERS = [
         'schema_migrations' => true,
@@ -140,6 +191,18 @@ final readonly class TableNames
         }
 
         return $this->prefix . $logical;
+    }
+
+    /** @return list<string> */
+    public function managedTables(): array
+    {
+        return array_map(fn (string $table): string => $this->prefix . $table, self::TABLES);
+    }
+
+    /** @return list<string> */
+    public function coreTables(): array
+    {
+        return array_map(fn (string $table): string => $this->prefix . $table, self::CORE_TABLES);
     }
 
     public function rewrite(string $sql): string

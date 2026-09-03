@@ -95,7 +95,7 @@ final class DatabaseConfigTest extends TestCase
         ]];
     }
 
-    public function testRuntimeAndMigrationCredentialsAreLoadedSeparately(): void
+    public function testRuntimeMigrationAndBackupCredentialsAreLoadedSeparately(): void
     {
         $_ENV['DB_HOST'] = 'localhost';
         $_ENV['DB_PORT'] = '3307';
@@ -104,18 +104,24 @@ final class DatabaseConfigTest extends TestCase
         $_ENV['DB_PASSWORD'] = 'runtime_secret';
         $_ENV['DB_MIGRATION_USER'] = 'migration_user';
         $_ENV['DB_MIGRATION_PASSWORD'] = 'migration_secret';
+        $_ENV['DB_BACKUP_USER'] = 'backup_user';
+        $_ENV['DB_BACKUP_PASSWORD'] = 'backup_secret';
         $_ENV['DB_TABLE_PREFIX'] = 'hosted_';
 
         try {
             $runtime = DatabaseConfig::fromEnvironment();
             $migration = DatabaseConfig::fromMigrationEnvironment();
+            $backup = DatabaseConfig::fromBackupEnvironment();
 
             self::assertSame('runtime_user', $runtime->username);
             self::assertSame('migration_user', $migration->username);
+            self::assertSame('backup_user', $backup->username);
             self::assertSame('runtime_secret', $runtime->password());
             self::assertSame('migration_secret', $migration->password());
+            self::assertSame('backup_secret', $backup->password());
             self::assertSame('hosted_', $runtime->tableNames->prefix());
             self::assertSame('hosted_', $migration->tableNames->prefix());
+            self::assertSame('hosted_', $backup->tableNames->prefix());
         } finally {
             unset(
                 $_ENV['DB_HOST'],
@@ -125,6 +131,8 @@ final class DatabaseConfigTest extends TestCase
                 $_ENV['DB_PASSWORD'],
                 $_ENV['DB_MIGRATION_USER'],
                 $_ENV['DB_MIGRATION_PASSWORD'],
+                $_ENV['DB_BACKUP_USER'],
+                $_ENV['DB_BACKUP_PASSWORD'],
                 $_ENV['DB_TABLE_PREFIX'],
             );
         }
