@@ -33,7 +33,8 @@ Do not paste either generated value into logs, support tickets, screenshots, or 
 4. Run the reviewed Core migrations, enabled-module migrations, and module lifecycle synchronization. MariaDB DDL can commit implicitly, so do not interrupt the request deliberately.
 5. Create the single administrator with name, email, and a unique passphrase of 12–1024 characters.
 6. Completion writes MariaDB installation state and `storage/install/installed.lock`, clears installer authorization, and redirects to `/login`. It does not log the administrator in.
-7. Remove `INSTALL_TOKEN` from the hosting environment. Keep `INSTALL_REOPEN=false` or unset.
+7. In production, remove `INSTALL_TOKEN` and both `DB_MIGRATION_*` values from the normal web-process environment. Keep `INSTALL_REOPEN=false` or unset. Normal production bootstrap intentionally fails until these temporary credentials are gone.
+8. Temporarily provide migration credentials only to a private CLI session and run `php bin/n3 production:check`, then remove them again. See `DEPLOYMENT.md` for the complete release sequence.
 
 The public `/` remains the neutral `Hello, world` view until an administrator explicitly runs `php bin/n3 site:scaffold --admin-email=ADDRESS`.
 
@@ -44,5 +45,7 @@ Migration history is recorded after each reviewed migration. If setup stops duri
 If administrator creation succeeded but final lock creation failed, the installer shows **Finish interrupted setup** and never offers a second administrator form. Finishing records completion and recreates the private lock.
 
 After completion `/install` returns the normal application `404`. For read-only diagnostics only, configure a new temporary `INSTALL_TOKEN` and `INSTALL_REOPEN=true`, visit `/install`, then immediately remove the token and disable reopen mode. Reopen mode cannot migrate, reset data, or create another administrator.
+
+Production reopen temporarily prevents the normal application from booting. Treat it as maintenance mode and restore `INSTALL_REOPEN=false` before serving traffic.
 
 The filesystem lock and database must be restored together. If the lock is missing but MariaDB says installation is complete, the runtime connection recreates it. If storage permissions prevent that repair, correct the private directory permissions before serving traffic.

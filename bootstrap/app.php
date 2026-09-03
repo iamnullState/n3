@@ -8,6 +8,7 @@ use N3\App\Identity\IdentityKernel;
 use N3\App\Content\ContentKernel;
 use N3\App\Content\PageMediaProvider;
 use N3\Core\Application;
+use N3\Core\Deployment\ProductionGuard;
 use N3\Core\Http\Router;
 use N3\Core\Logging\FileLogger;
 use N3\Core\Event\EventDispatcher;
@@ -28,6 +29,8 @@ require_once $root . '/vendor/autoload.php';
 
 /** @var array{name: string, version: string, environment: string, debug: bool, timezone: string} $config */
 $config = require $root . '/config/app.php';
+
+ProductionGuard::assertWebReady($root, $config);
 
 date_default_timezone_set($config['timezone']);
 ini_set('display_errors', '0');

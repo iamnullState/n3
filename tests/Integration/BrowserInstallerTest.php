@@ -15,7 +15,10 @@ use N3\Core\Database\DatabaseConfig;
 use N3\Core\Database\MigrationRunner;
 use N3\Core\Database\TablePrefixedPdo;
 use N3\Core\Database\TransactionManager;
+use N3\Core\Deployment\ProductionReadiness;
 use N3\Core\Http\Request;
+use N3\Core\Module\ModuleLifecycleService;
+use N3\Core\Module\PdoModuleLifecycleRepository;
 use N3\Module\CoreProbe\CoreProbeModule;
 use PDO;
 use PHPUnit\Framework\TestCase;
@@ -53,7 +56,10 @@ final class BrowserInstallerTest extends TestCase
         $this->connection->exec("SET time_zone = '+00:00'");
         $this->temporaryDirectory = sys_get_temp_dir() . '/n3-browser-install-' . bin2hex(random_bytes(5));
         mkdir($this->temporaryDirectory . '/storage', 0700, true);
+        mkdir($this->temporaryDirectory . '/public', 0755, true);
         symlink(dirname(__DIR__, 2) . '/database', $this->temporaryDirectory . '/database');
+        symlink(dirname(__DIR__, 2) . '/.htaccess', $this->temporaryDirectory . '/.htaccess');
+        symlink(dirname(__DIR__, 2) . '/public/.htaccess', $this->temporaryDirectory . '/public/.htaccess');
     }
 
     protected function tearDown(): void
@@ -79,11 +85,14 @@ final class BrowserInstallerTest extends TestCase
         @rmdir($this->temporaryDirectory . '/storage/sessions');
         @rmdir($this->temporaryDirectory . '/storage/logs');
         @rmdir($this->temporaryDirectory . '/storage');
+        @unlink($this->temporaryDirectory . '/public/.htaccess');
+        @rmdir($this->temporaryDirectory . '/public');
         foreach (glob($this->temporaryDirectory . '/legacy-migrations/*.php') ?: [] as $file) {
             @unlink($file);
         }
         @rmdir($this->temporaryDirectory . '/legacy-migrations');
         @unlink($this->temporaryDirectory . '/database');
+        @unlink($this->temporaryDirectory . '/.htaccess');
         @rmdir($this->temporaryDirectory);
     }
 
@@ -120,6 +129,55 @@ final class BrowserInstallerTest extends TestCase
         self::assertSame(0600, fileperms($this->temporaryDirectory . '/storage/install/installed.lock') & 0777);
         self::assertSame(1, (int) $this->connection->query("SELECT COUNT(*) FROM users WHERE role_key = 'admin'")->fetchColumn());
         self::assertSame(10, (int) $this->connection->query('SELECT COUNT(*) FROM schema_migrations')->fetchColumn());
+
+        $environment = [
+            'APP_URL' => 'https://example.test',
+            'SECURITY_HASH_KEY' => str_repeat('s', 32),
+            'EMAIL_VERIFICATION_REQUIRED' => 'true',
+            'REGISTRATION_ENABLED' => 'false',
+            'INSTALL_REOPEN' => 'false',
+            'INSTALL_TOKEN' => null,
+            'DB_HOST' => 'localhost',
+        ];
+        $original = [];
+        foreach ($environment as $key => $value) {
+            $original[$key] = getenv($key);
+            if ($value === null) {
+                putenv($key);
+                unset($_ENV[$key]);
+            } else {
+                putenv($key . '=' . $value);
+                $_ENV[$key] = $value;
+            }
+        }
+        try {
+            $modules = [new CoreProbeModule()];
+            $checks = (new ProductionReadiness(
+                $this->temporaryDirectory,
+                ['environment' => 'production', 'debug' => false],
+                $this->databaseConfig('runtime_user'),
+                $this->databaseConfig((string) getenv('N3_TEST_DB_MIGRATION_USER')),
+                $this->connection,
+                $this->connection,
+                $state,
+                new ModuleLifecycleService(
+                    new PdoModuleLifecycleRepository($this->connection),
+                    new TransactionManager($this->connection),
+                ),
+                $modules,
+            ))->checks();
+            self::assertNotContains(false, $checks, implode(', ', array_keys(array_filter($checks, static fn (bool $passed): bool => !$passed))));
+        } finally {
+            foreach ($original as $key => $value) {
+                if ($value === false) {
+                    putenv($key);
+                    unset($_ENV[$key]);
+                } else {
+                    putenv($key . '=' . $value);
+                    $_ENV[$key] = $value;
+                }
+            }
+        }
 
         $service->complete();
         $this->expectException(RuntimeException::class);

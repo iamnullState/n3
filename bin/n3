@@ -10,8 +10,10 @@ use N3\App\Identity\PdoPasswordResetTokenRepository;
 use N3\App\Identity\PdoRateLimiter;
 use N3\App\Identity\PdoUserRepository;
 use N3\App\Identity\PdoVerificationTokenRepository;
+use N3\App\Install\PdoInstallationStateRepository;
 use N3\Core\Database\MigrationRunner;
 use N3\Core\Database\TransactionManager;
+use N3\Core\Deployment\ProductionReadiness;
 use N3\Core\Job\JobWorker;
 use N3\Core\Job\JobHandler;
 use N3\Core\Job\PdoJobQueue;
@@ -56,12 +58,45 @@ if ($command === 'help') {
     fwrite(STDOUT, "  php bin/n3 analytics:prune [--days=90] [--apply]\n");
     fwrite(STDOUT, "  php bin/n3 mcp:serve --stdio\n");
     fwrite(STDOUT, "  php bin/n3 site:scaffold --admin-email=ADDRESS\n");
+    fwrite(STDOUT, "  php bin/n3 production:check\n");
     exit(0);
 }
 
 try {
     $app = require $root . '/config/app.php';
     date_default_timezone_set($app['timezone']);
+
+    if ($command === 'production:check') {
+        $runtime = require $root . '/config/database.php';
+        $migration = require $root . '/config/migrations.php';
+        $factory = new ConnectionFactory();
+        $runtimeConnection = $factory->create($runtime);
+        $migrationConnection = $factory->create($migration);
+        $modules = (new ModuleGraph($app['version']))->ordered(require $root . '/config/modules.php');
+        $readiness = new ProductionReadiness(
+            $root,
+            $app,
+            $runtime,
+            $migration,
+            $runtimeConnection,
+            $migrationConnection,
+            new PdoInstallationStateRepository($runtimeConnection),
+            new ModuleLifecycleService(
+                new PdoModuleLifecycleRepository($runtimeConnection),
+                new TransactionManager($runtimeConnection),
+            ),
+            $modules,
+        );
+        $checks = $readiness->checks();
+        foreach ($checks as $name => $passed) {
+            fwrite(STDOUT, sprintf('[%s] %s' . "\n", $passed ? 'x' : ' ', $name));
+        }
+        $failed = in_array(false, $checks, true);
+        fwrite(STDOUT, $failed
+            ? "Production readiness checks failed.\n"
+            : "Production readiness checks passed. Remove migration credentials from the web runtime before serving traffic.\n");
+        exit($failed ? 1 : 0);
+    }
 
     if ($command === 'mcp:serve') {
         if (!in_array('--stdio', $argv, true)) {

@@ -57,6 +57,7 @@ services:
       N3_TEST_DB_MIGRATION_USER: ${N3_TEST_DB_MIGRATION_USER:?Set N3_TEST_DB_MIGRATION_USER in .env.docker}
       N3_TEST_DB_MIGRATION_PASSWORD: ${N3_TEST_DB_MIGRATION_PASSWORD:?Set N3_TEST_DB_MIGRATION_PASSWORD in .env.docker}
     volumes:
+      - ./.htaccess:/app/.htaccess:ro
       - ./bin:/app/bin:ro
       - ./bootstrap:/app/bootstrap:ro
       - ./config:/app/config:ro
