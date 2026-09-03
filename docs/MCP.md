@@ -1,5 +1,8 @@
 # Local MCP Boundary
 
+![Status local and data free](https://img.shields.io/badge/status-local_data--free-2457D6)
+![Default disabled](https://img.shields.io/badge/default-disabled-lightgrey)
+
 Phase 6C proves the Model Context Protocol boundary without exposing CMS data or actions. The `n3/mcp-server` module is disabled by default, has no migration, opens no socket, and registers no HTTP route.
 
 ## Protocol and transport

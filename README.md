@@ -1,21 +1,30 @@
 # N3 Core
 
+![Core version 0.2.0](https://img.shields.io/badge/core-0.2.0-2457D6)
+![Next phase 10B](https://img.shields.io/badge/next_phase-10B-8A3FFC)
+![PHP 8.5 or newer](https://img.shields.io/badge/PHP-%3E%3D8.5-777BB4?logo=php&logoColor=white)
+![MariaDB 11.8 and 12.3](https://img.shields.io/badge/MariaDB-11.8_%7C_12.3-003545?logo=mariadb&logoColor=white)
+![Tests 243 passing](https://img.shields.io/badge/tests-243_passing-2EA44F)
+![License proprietary](https://img.shields.io/badge/license-proprietary-lightgrey)
+
 N3 is a framework-free PHP modular-monolith foundation for an independently installed, white-label CMS.
 
 ## Current milestone
 
-Phase 9 Blog MVP is committed. Phase 10 is being defined for a shared-hosting browser installer. The Secure Core Kernel provides:
+Phase 9 Blog and the installer prerequisites are committed. Phase 10A's immutable table-prefix foundation is implemented and validated; Phase 10B's browser installer is next. The Secure Core Kernel provides:
 
 - validated environment configuration;
 - a single public entry point;
 - request, router, controller, response, and view layers;
-- a basic N3 landing page based on the external `n3ui` reference;
+- a neutral, accessible `Hello, world` fallback that a published CMS Home Page can replace;
 - safe HTML escaping and baseline response security headers;
 - structured error logging with request identifiers;
 - safe 404 and 500 views;
 - PHPUnit coverage for the request lifecycle, routing, escaping, and landing page.
 
 The PDO/MariaDB and identity foundations are implemented. Phase 4 adds the first CMS Page slice. Phase 5 establishes trusted module boot, durable synchronization/jobs, private resource and transport contracts, and preview-first forward module migrations. Phase 6 adds opt-in aggregate Analytics and a data-free local `stdio` MCP server. Phase 7 adds a disabled-by-default Media module with secure image ingestion and lifecycle controls. Phase 8 adds an idempotent default-site scaffold, audited white-label identity, editable Page navigation, and published Home routing with a safe fallback. Phase 9 adds a disabled-by-default Blog module with secure administrator authoring and bounded public retrieval.
+
+Latest verification on 2026-09-02: host PHP passed 243 tests/673 assertions; MariaDB 11.8 passed 243/1,099 and MariaDB 12.3 passed 243/1,053. Environment-dependent skips are documented in the runbook.
 
 ## Requirements
 
@@ -33,6 +42,10 @@ composer install
 Configuration is read from real environment variables. `.env.example` documents the current keys; the application does not parse `.env` files or commit secrets.
 
 `EMAIL_VERIFICATION_REQUIRED=false` is available only for local/test debugging. Production rejects disabled verification.
+
+`DB_TABLE_PREFIX` defaults to empty. A non-empty value must be 2–24 lowercase ASCII characters, begin with a letter, and end with `_` (for example, `client_`). Set it before the first migration and never change it afterward. N3 records it in installation state and rejects a mismatch.
+
+There is no browser installer yet. Current setup remains CLI-driven: configure the environment, apply migrations, create the first administrator, and optionally run `site:scaffold`. The scaffold is never implicit; without it, `/` retains the neutral fallback.
 
 ## Run locally
 
@@ -88,6 +101,6 @@ See `docs/API.md` for the versioned JSON envelope, liveness route, and deferred 
 See `docs/WEBHOOKS.md` for signing, replay defense, endpoint restrictions, delivery retry classification, and deferred network boundaries.
 See `docs/ANALYTICS.md` for the opt-in aggregate metric boundary, module deployment, reporting, retention, and deferred tracking features.
 See `docs/MCP.md` for the local protocol, trust, tool, rate-limit, enablement, and deferred capability boundaries.
-See `docs/MEDIA.md` for secure image ingestion, private storage, catalog, preview, backup, and deferred delivery boundaries.
+See `docs/MEDIA.md` for secure image ingestion, private storage, conditional Page delivery, lifecycle controls, backup, and deferred generalized attachment boundaries.
 See `docs/SITE.md` for scaffold installation, site identity, navigation, public Home behavior, and recovery.
 See `docs/BLOG.md` for Blog enablement, content lifecycle, routes, security boundaries, migration, and recovery.

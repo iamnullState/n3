@@ -1,5 +1,8 @@
 # Webhook Security and Delivery Contract
 
+![Status contract only](https://img.shields.io/badge/status-contract_only-F59E0B)
+![Network delivery disabled](https://img.shields.io/badge/network-disabled-lightgrey)
+
 Phase 5C defines signing, verification, replay persistence, endpoint policy, and retry classification. It deliberately provides no inbound webhook route and no network-capable outbound transport. No external service can call or be called by this code yet.
 
 ## Signature contract

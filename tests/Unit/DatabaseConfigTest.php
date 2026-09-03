@@ -20,6 +20,7 @@ final class DatabaseConfigTest extends TestCase
             $config->dsn(),
         );
         self::assertStringNotContainsString('secret', $config->dsn());
+        self::assertSame('', $config->tableNames->prefix());
     }
 
     public function testItRejectsDsnInjectionThroughTheDatabaseName(): void
@@ -103,6 +104,7 @@ final class DatabaseConfigTest extends TestCase
         $_ENV['DB_PASSWORD'] = 'runtime_secret';
         $_ENV['DB_MIGRATION_USER'] = 'migration_user';
         $_ENV['DB_MIGRATION_PASSWORD'] = 'migration_secret';
+        $_ENV['DB_TABLE_PREFIX'] = 'hosted_';
 
         try {
             $runtime = DatabaseConfig::fromEnvironment();
@@ -112,6 +114,8 @@ final class DatabaseConfigTest extends TestCase
             self::assertSame('migration_user', $migration->username);
             self::assertSame('runtime_secret', $runtime->password());
             self::assertSame('migration_secret', $migration->password());
+            self::assertSame('hosted_', $runtime->tableNames->prefix());
+            self::assertSame('hosted_', $migration->tableNames->prefix());
         } finally {
             unset(
                 $_ENV['DB_HOST'],
@@ -121,7 +125,22 @@ final class DatabaseConfigTest extends TestCase
                 $_ENV['DB_PASSWORD'],
                 $_ENV['DB_MIGRATION_USER'],
                 $_ENV['DB_MIGRATION_PASSWORD'],
+                $_ENV['DB_TABLE_PREFIX'],
             );
+        }
+    }
+
+    public function testInvalidEnvironmentTablePrefixFailsClosed(): void
+    {
+        $_ENV['DB_USER'] = 'runtime_user';
+        $_ENV['DB_PASSWORD'] = 'runtime_secret';
+        $_ENV['DB_TABLE_PREFIX'] = 'unsafe-prefix_';
+
+        try {
+            $this->expectException(DatabaseException::class);
+            DatabaseConfig::fromEnvironment();
+        } finally {
+            unset($_ENV['DB_USER'], $_ENV['DB_PASSWORD'], $_ENV['DB_TABLE_PREFIX']);
         }
     }
 }

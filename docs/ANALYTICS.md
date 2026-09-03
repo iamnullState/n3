@@ -1,5 +1,8 @@
 # Aggregate Analytics
 
+![Status optional module](https://img.shields.io/badge/status-optional_module-2457D6)
+![Default disabled](https://img.shields.io/badge/default-disabled-lightgrey)
+
 Phase 6A is N3's first functional optional module. It measures aggregate application request outcomes without tracking visitors.
 
 Phase 6B adds a private server-rendered dashboard and development vitals over the same aggregate boundary.

@@ -1,5 +1,8 @@
 # Database Security
 
+![Security status development](https://img.shields.io/badge/security-development-F59E0B)
+![Production review required](https://img.shields.io/badge/production-review_required-D73A49)
+
 This document defines the security boundary for N3's PDO/MariaDB foundation. It covers the current development and test implementation and records the controls that a future production deployment must supply. It is not a production-readiness claim.
 
 ## Security objectives
@@ -83,7 +86,7 @@ Credential rotation procedure for a future deployment:
 - Host, port, username length, and non-empty credentials are validated.
 - `PdoUserRepository` binds every stored value as a parameter.
 - Public input must never select SQL identifiers, migration names, account status, or role keys.
-- `createPending()` assigns `pending_verification` and `member` in trusted server code.
+- `createPending()` assigns `pending_verification` and `member` in trusted server code; the local/test-only verification bypass may then activate that new member within the registration transaction, never from request-selected status or authority.
 - Connection failures are wrapped in a generic `DatabaseException`; user-facing paths must not expose the underlying PDO exception.
 
 Prepared statements do not replace input validation. Identity use cases enforce email normalization and bounds, a 12–1024 character passphrase policy, server-assigned authority, database-backed rate limits, CSRF, and generic account-discovery responses.
@@ -163,6 +166,10 @@ Phase 6A Analytics uses the shared runtime DML account for one atomic hourly-buc
 Phase 8 site installation and settings changes require an active, verified fixed `admin`. All browser changes require session CSRF and optimistic locking. Navigation Page IDs are validated against MariaDB, settings have bounded typed validation, logo paths are same-origin allowlisted, and public output is escaped. Site audit events use controlled keys and omit old/new values, contact-address copies, Page content, and request payloads. The scaffold command accepts only an administrator email option and never a password.
 
 Phase 9 Blog uses the restricted runtime DML account only after its reviewed module migration. Administrator mutations require an active verified fixed `admin`, action-specific CSRF, canonical validated values, transactions, and exact optimistic lock versions. The module receives only internal actor ID plus fixed authority. Public queries are published-only, exact-slug, prepared, and bounded; list queries omit bodies. Audit rows use a database-constrained vocabulary and exclude post text, slugs, profiles, request payloads, tokens, IP addresses, and user agents.
+
+Phase 10A keeps `DB_TABLE_PREFIX` read-only and outside request input. One exact allowlist maps managed logical table/index/constraint identifiers before PDO prepares or executes SQL; values and unknown identifiers are unchanged. The empty prefix preserves existing installations. A new installation-state migration records the selected prefix, connections reject later mismatches, historical migration sources/checksums remain frozen, and module migration locks include the installation prefix. This isolation does not weaken the separate runtime/migration credential boundary.
+
+Phase 10B must keep database passwords, `SECURITY_HASH_KEY`, and installer authorization out of responses, logs, sessions, and ordinary form fields; it must retain separate runtime and migration credentials and permanently close after durable completion. No browser route currently performs DDL or administrator creation.
 
 Phase 6B reporting requires an active administrator session and receives only fixed authority from Core's lazy principal provider; Analytics receives no account ID or profile. Report periods and grouping are allowlisted, responses are `no-store`/`noindex`, and failures expose neither SQL nor exception messages. The report connection uses the runtime DML account and performs no DDL. Dashboard output remains sensitive operational data even though it contains no visitor-level records.
 

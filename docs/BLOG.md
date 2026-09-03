@@ -1,5 +1,8 @@
 # Blog Module
 
+![Status implemented](https://img.shields.io/badge/status-implemented-2EA44F)
+![Default disabled](https://img.shields.io/badge/default-disabled-lightgrey)
+
 Phase 9 adds `n3/blog` `0.1.0` as the first optional content module. It is disabled by default and owns its content, lifecycle events, forward migration, services, routes, and views. Core and Page do not depend on it.
 
 ## Enable and deploy

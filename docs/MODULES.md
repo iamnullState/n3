@@ -1,6 +1,10 @@
 # Core Services, Events, and Modules
 
-Phase 5A introduced the executable module boundary. Phase 5B added deployment-state reconciliation and durable jobs. Phase 5C defined private resources and external transport contracts. Phase 5D added forward-only module migrations and recovery gates. Phase 6A uses those contracts for the opt-in `n3/analytics` module. Phase 6C adds a data-free local `stdio` MCP boundary. All remain limited to trusted, deployment-installed PHP modules. Uploaded extensions, remote code, runtime installation, business APIs, webhook network delivery, and an application-managed daemon remain prohibited.
+![Status implemented](https://img.shields.io/badge/status-implemented-2EA44F)
+
+Phase 5A introduced the executable module boundary. Phase 5B added deployment-state reconciliation and durable jobs. Phase 5C defined private resources and external transport contracts. Phase 5D added forward-only module migrations and recovery gates. Phase 6A uses those contracts for opt-in `n3/analytics`; Phase 6C adds a data-free local `stdio` MCP boundary; Phase 7 adds `n3/media`; and Phase 9 adds `n3/blog`. Optional modules remain disabled by default and limited to trusted, deployment-installed PHP code. Uploaded extensions, remote code, runtime installation, business APIs, webhook network delivery, and an application-managed daemon remain prohibited.
+
+Phase 10A applies the immutable global `DB_TABLE_PREFIX` before each allowlisted module table, index, or named constraint while preserving the deterministic module-owned logical namespace. Module migration history and advisory locks are installation-prefix aware. A future module that adds schema identifiers must register them in the central table-name policy and add prefixed-install coverage.
 
 ## Trust boundary
 

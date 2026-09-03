@@ -1,5 +1,8 @@
 # Identity and Access Foundation
 
+![Status implemented](https://img.shields.io/badge/status-implemented-2EA44F)
+![Authorities admin and member](https://img.shields.io/badge/authorities-admin_%7C_member-2457D6)
+
 Phase 3 is delivered as two reviewed slices. Slice 3A provides verified public registration. Slice 3B provides authentication, private server-side sessions, password recovery, and protected administrator bootstrap.
 
 ## Registration and verification

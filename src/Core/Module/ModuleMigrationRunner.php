@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace N3\Core\Module;
 
 use N3\Core\Database\DatabaseException;
+use N3\Core\Database\TablePrefixedPdo;
 use PDO;
 use Throwable;
 
@@ -155,10 +156,11 @@ final readonly class ModuleMigrationRunner
 
     private function repositoryExists(): bool
     {
-        $statement = $this->connection->query(
+        $statement = $this->connection->prepare(
             "SELECT COUNT(*) FROM information_schema.tables "
-            . "WHERE table_schema = DATABASE() AND table_name = 'module_migrations'",
+            . 'WHERE table_schema = DATABASE() AND table_name = :table_name',
         );
+        $statement->execute(['table_name' => $this->tableName('module_migrations')]);
 
         return $statement !== false && (int) $statement->fetchColumn() === 1;
     }
@@ -202,10 +204,11 @@ final readonly class ModuleMigrationRunner
 
     private function moduleRepositoryExists(): bool
     {
-        $statement = $this->connection->query(
+        $statement = $this->connection->prepare(
             "SELECT COUNT(*) FROM information_schema.tables "
-            . "WHERE table_schema = DATABASE() AND table_name = 'modules'",
+            . 'WHERE table_schema = DATABASE() AND table_name = :table_name',
         );
+        $statement->execute(['table_name' => $this->tableName('modules')]);
 
         return $statement !== false && (int) $statement->fetchColumn() === 1;
     }
@@ -217,7 +220,11 @@ final readonly class ModuleMigrationRunner
             throw new DatabaseException('Unable to determine the module migration lock scope.');
         }
 
-        return 'n3:module-migrations:' . substr(hash('sha256', $database), 0, 32);
+        $prefix = $this->connection instanceof TablePrefixedPdo
+            ? $this->connection->tableNames()->prefix()
+            : '';
+
+        return 'n3:module-migrations:' . substr(hash('sha256', $database . "\0" . $prefix), 0, 32);
     }
 
     private function acquireLock(string $name): void
@@ -236,5 +243,12 @@ final readonly class ModuleMigrationRunner
             $statement->execute(['name' => $name]);
         } catch (Throwable) {
         }
+    }
+
+    private function tableName(string $logical): string
+    {
+        return $this->connection instanceof TablePrefixedPdo
+            ? $this->connection->tableNames()->physical($logical)
+            : $logical;
     }
 }

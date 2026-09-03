@@ -1,5 +1,8 @@
 # Durable Jobs
 
+![Status implemented](https://img.shields.io/badge/status-implemented-2EA44F)
+![Delivery at least once](https://img.shields.io/badge/delivery-at_least_once-2457D6)
+
 Phase 5B provides a small MariaDB-backed job boundary for work that should not execute inside a synchronous HTTP event listener. It is an at-least-once execution system: handlers must be idempotent and safe to repeat.
 
 ## Data model

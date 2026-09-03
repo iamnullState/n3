@@ -21,7 +21,7 @@ final class ConnectionFactory
         }
 
         try {
-            $connection = new PDO(
+            $connection = new TablePrefixedPdo(
                 $config->dsn(),
                 $config->username,
                 $config->password(),
@@ -31,8 +31,10 @@ final class ConnectionFactory
                     PDO::ATTR_EMULATE_PREPARES => false,
                     PDO::ATTR_STRINGIFY_FETCHES => false,
                 ],
+                $config->tableNames,
             );
             $connection->exec("SET time_zone = '+00:00'");
+            $connection->assertInstallationIdentity();
 
             return $connection;
         } catch (PDOException $exception) {
