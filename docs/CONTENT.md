@@ -1,5 +1,7 @@
 # Page Content Vertical Slice
 
+![Status implemented](https://img.shields.io/badge/status-implemented-2EA44F)
+
 Phase 4 introduces one deliberately narrow CMS content type: `Page`. It proves authenticated authoring, validation, preview, publication, public retrieval, auditability, and stale-write protection without introducing configurable schemas or rich HTML.
 
 ## Content model
@@ -41,7 +43,7 @@ When Media is enabled, the same draft-only and optimistic-lock rule applies to a
 - `POST /admin/pages/{id}/unpublish`
 - `POST /admin/pages/{id}/media` — attach, change, or detach one lead image while draft; available only when Media is enabled
 - `GET /pages/{slug}` — published content only
-- `GET /` — the published `home` Page after Phase 8 scaffold installation; otherwise the static Core landing page
+- `GET /` — the published `home` Page after explicit Phase 8 scaffold installation; otherwise the neutral `Hello, world` fallback
 - `GET /media/{id}.webp` — sanitized preview derivative only when attached to at least one published Page
 
 Stale lock versions and attempts to edit a published page return a conflict instead of overwriting data. Unknown, draft, noncanonical, and invalid public slugs return `404`.

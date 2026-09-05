@@ -205,7 +205,10 @@ final class SiteScaffoldTest extends TestCase
         self::assertTrue($this->pages->unpublish(
             $homePage->id, $this->adminId, $homePage->lockVersion, $this->requestId,
         )->succeeded());
-        self::assertStringContainsString('Built once. Shaped for every site.', $public->home(Request::create('GET', '/'))->body());
+        $fallbackResponse = $public->home(Request::create('GET', '/'))->body();
+        self::assertStringContainsString('greeting-hello">Hello,</span>', $fallbackResponse);
+        self::assertStringContainsString('greeting-world">world</span>', $fallbackResponse);
+        self::assertStringNotContainsString('N3', $fallbackResponse);
     }
 
     public function testAdminSettingsRequireAuthenticationAuthorityAndCsrf(): void

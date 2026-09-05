@@ -32,6 +32,8 @@ final class RequestMetricsTest extends TestCase
             '/admin/media/0123456789abcdef0123456789abcdef/preview?token=private' => 'admin.media',
             '/admin/site' => 'admin.site',
             '/site.css' => 'public.site',
+            '/blog/private-looking-slug?preview=secret' => 'public.blog',
+            '/admin/blog/184/edit?token=private' => 'admin.blog',
             '/api/v1/system/ping' => 'api.system',
             '/api/v1/users/person@example.test' => 'api.other',
             '/unknown/private-value' => 'other',

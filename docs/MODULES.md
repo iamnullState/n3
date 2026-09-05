@@ -1,6 +1,10 @@
 # Core Services, Events, and Modules
 
-Phase 5A introduced the executable module boundary. Phase 5B added deployment-state reconciliation and durable jobs. Phase 5C defined private resources and external transport contracts. Phase 5D added forward-only module migrations and recovery gates. Phase 6A uses those contracts for the opt-in `n3/analytics` module. Phase 6C adds a data-free local `stdio` MCP boundary. All remain limited to trusted, deployment-installed PHP modules. Uploaded extensions, remote code, runtime installation, business APIs, webhook network delivery, and an application-managed daemon remain prohibited.
+![Status implemented](https://img.shields.io/badge/status-implemented-2EA44F)
+
+Phase 5A introduced the executable module boundary. Phase 5B added deployment-state reconciliation and durable jobs. Phase 5C defined private resources and external transport contracts. Phase 5D added forward-only module migrations and recovery gates. Phase 6A uses those contracts for opt-in `n3/analytics`; Phase 6C adds a data-free local `stdio` MCP boundary; Phase 7 adds `n3/media`; and Phase 9 adds `n3/blog`. Optional modules remain disabled by default and limited to trusted, deployment-installed PHP code. Uploaded extensions, remote code, runtime installation, business APIs, webhook network delivery, and an application-managed daemon remain prohibited.
+
+Phase 10A applies the immutable global `DB_TABLE_PREFIX` before each allowlisted module table, index, or named constraint while preserving the deterministic module-owned logical namespace. Module migration history and advisory locks are installation-prefix aware. A future module that adds schema identifiers must register them in the central table-name policy and add prefixed-install coverage.
 
 ## Trust boundary
 
@@ -108,6 +112,8 @@ Core creates one explicit `ServiceRegistry`. Core services are registered under 
 
 Core registers a lazy `CurrentPrincipalProvider` before module registration. It opens Identity persistence only when a module asks for the current authority, retains normal session expiry/version checks, and returns no display name, email, account ID, session ID, or token. This is an authorization boundary, not a general user-profile service.
 
+Core also registers a narrow `CurrentActorProvider` for audited module mutations that require attribution. It exposes only a positive internal account ID and the fixed authority after the same Identity session validation. Blog uses this contract; it receives no name, email, session identifier, or token. Modules that need only authorization must continue to use the less revealing principal contract.
+
 The registry is not ambient dependency injection and does not discover classes. Consumers request an explicit identifier and must verify the returned contract. Core must never depend on a service owned by an optional module.
 
 ## Events
@@ -127,6 +133,8 @@ Delivery becomes active only after all module listener registration is sealed. I
 `n3/mcp-server` is disabled by default and enters the allowlist only when `MCP_ENABLED=true`. It registers a stateless local protocol server, has no migrations, routes, database connection, files, network transport, or background work, and exposes only a constant data-free status tool through an explicit CLI process. See [MCP.md](MCP.md).
 
 `n3/media` is disabled by default and enters the allowlist only when `MEDIA_ENABLED=true`. Version `0.3.0` also adds bounded usage counts, checksum-verified preview regeneration, and unused-only deletion. Page consumes only the optional `PageMediaProvider` application contract, so Core Page schema and behavior remain valid when Media is disabled. GD re-encodes accepted JPEG/PNG pixels to WebP; raw uploads, original filenames, private masters, and internal labels are never publicly delivered. See [MEDIA.md](MEDIA.md).
+
+`n3/blog` is disabled by default and enters the allowlist only when `BLOG_ENABLED=true`. Version `0.1.0` owns its post and controlled audit-event tables through one forward migration, uses the narrow actor contract for fixed-administrator authoring, and exposes a ten-post bounded public index plus published-slug detail. Core, Page, and Media do not depend on Blog. See [BLOG.md](BLOG.md).
 
 ## Jobs
 

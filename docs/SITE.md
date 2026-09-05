@@ -1,5 +1,8 @@
 # Site Scaffold and White-label Settings
 
+![Status implemented](https://img.shields.io/badge/status-implemented-2EA44F)
+![Installation explicit](https://img.shields.io/badge/install-explicit_CLI-2457D6)
+
 Phase 8 turns a migrated N3 installation into a usable default site without introducing a second content model. The scaffold creates five ordinary `Page` records and stores mutable site identity and navigation in MariaDB.
 
 ## Installation
@@ -10,13 +13,13 @@ Take and verify a database backup, apply Core migrations, and bootstrap the firs
 php bin/n3 site:scaffold --admin-email=admin@example.test
 ```
 
-The email must identify the existing active, verified `admin`. Passwords are never accepted by this command. It creates published `home`, `about`, `contact`, `privacy-policy`, and `terms` Pages only when each slug is absent, creates the singleton settings row only when absent, and adds missing navigation entries. Re-running it is safe and does not duplicate or overwrite Pages, settings, or navigation.
+The email must identify the existing active, verified `admin`. Passwords are never accepted by this command. It creates published `home`, `about`, `contact`, `privacy-policy`, and `terms` Pages only when each slug is absent, creates the singleton settings row only when absent, and adds missing navigation entries. Re-running it is safe and does not duplicate or overwrite Pages, settings, or navigation. The browser installer does not run this command automatically.
 
 The seeded policy text is a placeholder, not legal advice. Review it before production use. The Contact Page does not submit or send mail.
 
 ## Site behavior
 
-- `/` renders the published Page whose slug is `home`. If it is absent or unpublished, N3 uses the static Core landing page.
+- `/` renders the published Page whose slug is `home`. If it is absent or unpublished, N3 uses the neutral `Hello, world` fallback.
 - `/pages/{slug}` continues to render every other published Page.
 - `GET /site.css` publishes only the validated primary color as a small cacheable stylesheet.
 - `GET /admin/site` lets an active administrator edit identity and the stored Page navigation; `POST /admin/site` requires session CSRF and an optimistic lock version.

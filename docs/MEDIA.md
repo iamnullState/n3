@@ -1,5 +1,8 @@
 # Private Media Library
 
+![Status implemented](https://img.shields.io/badge/status-implemented-2EA44F)
+![Default disabled](https://img.shields.io/badge/default-disabled-lightgrey)
+
 Phase 7A adds `n3/media`, a disabled-by-default administrator image-ingestion module. Phase 7B adds one optional Page lead-image relationship and controlled delivery of the sanitized preview derivative. Phase 7C adds usage counts, checksum-verified preview regeneration, and unused-only deletion. Private masters never become web-addressable.
 
 ## Enablement and deployment

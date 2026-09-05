@@ -1,5 +1,7 @@
 # Public API Contract
 
+![Status foundation only](https://img.shields.io/badge/status-foundation_only-F59E0B)
+
 Phase 5C defines the versioned JSON transport boundary without exposing CMS business data. The only reachable endpoint is `GET /api/v1/system/ping`; N3 does not yet issue API credentials or enable authenticated business routes.
 
 ## Version and media type

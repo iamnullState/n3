@@ -26,13 +26,18 @@ n3_validate_secret() {
 n3_validate_identifier "${MARIADB_DATABASE:-}" "database name" || return 1
 n3_validate_identifier "${N3_DB_RUNTIME_USER:-}" "runtime user" || return 1
 n3_validate_identifier "${N3_DB_MIGRATION_USER:-}" "migration user" || return 1
+n3_validate_identifier "${N3_DB_BACKUP_USER:-}" "backup user" || return 1
 n3_validate_secret "${MARIADB_ROOT_PASSWORD:-}" "root password" || return 1
 n3_validate_secret "${N3_DB_RUNTIME_PASSWORD:-}" "runtime password" || return 1
 n3_validate_secret "${N3_DB_MIGRATION_PASSWORD:-}" "migration password" || return 1
+n3_validate_secret "${N3_DB_BACKUP_PASSWORD:-}" "backup password" || return 1
 
 if [[ "$MARIADB_ROOT_PASSWORD" == "$N3_DB_RUNTIME_PASSWORD" \
     || "$MARIADB_ROOT_PASSWORD" == "$N3_DB_MIGRATION_PASSWORD" \
-    || "$N3_DB_RUNTIME_PASSWORD" == "$N3_DB_MIGRATION_PASSWORD" ]]; then
+    || "$MARIADB_ROOT_PASSWORD" == "$N3_DB_BACKUP_PASSWORD" \
+    || "$N3_DB_RUNTIME_PASSWORD" == "$N3_DB_MIGRATION_PASSWORD" \
+    || "$N3_DB_RUNTIME_PASSWORD" == "$N3_DB_BACKUP_PASSWORD" \
+    || "$N3_DB_MIGRATION_PASSWORD" == "$N3_DB_BACKUP_PASSWORD" ]]; then
     echo "Database passwords must be distinct." >&2
     return 1
 fi
@@ -40,6 +45,7 @@ fi
 mariadb --protocol=socket -uroot -p"${MARIADB_ROOT_PASSWORD}" <<-EOSQL
 CREATE USER IF NOT EXISTS '${N3_DB_RUNTIME_USER}'@'%' IDENTIFIED BY '${N3_DB_RUNTIME_PASSWORD}';
 CREATE USER IF NOT EXISTS '${N3_DB_MIGRATION_USER}'@'%' IDENTIFIED BY '${N3_DB_MIGRATION_PASSWORD}';
+CREATE USER IF NOT EXISTS '${N3_DB_BACKUP_USER}'@'%' IDENTIFIED BY '${N3_DB_BACKUP_PASSWORD}';
 
 GRANT SELECT, INSERT, UPDATE, DELETE
     ON \`${MARIADB_DATABASE}\`.*
@@ -48,6 +54,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, INDEX, REFERENCES
     ON \`${MARIADB_DATABASE}\`.*
     TO '${N3_DB_MIGRATION_USER}'@'%';
+
+GRANT SELECT
+    ON \`${MARIADB_DATABASE}\`.*
+    TO '${N3_DB_BACKUP_USER}'@'%';
 
 FLUSH PRIVILEGES;
 EOSQL

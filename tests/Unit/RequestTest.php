@@ -60,6 +60,13 @@ final class RequestTest extends TestCase
         self::assertSame('0.0.0.0', $request->clientIp());
     }
 
+    public function testHttpsDetectionUsesOnlyDirectServerState(): void
+    {
+        self::assertTrue(Request::create('GET', '/', server: ['HTTPS' => 'on'])->isSecure());
+        self::assertTrue(Request::create('GET', '/', server: ['SERVER_PORT' => 443])->isSecure());
+        self::assertFalse(Request::create('GET', '/', server: ['HTTP_X_FORWARDED_PROTO' => 'https'])->isSecure());
+    }
+
     public function testItKeepsUploadedFilesSeparateAndPreservesThemAcrossAttributes(): void
     {
         $file = new UploadedFile('/private/upload', UPLOAD_ERR_OK, 123);

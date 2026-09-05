@@ -1,0 +1,8 @@
+<?php declare(strict_types=1); use N3\Module\Blog\BlogPost; $posts = is_array($viewData['posts'] ?? null) ? $viewData['posts'] : []; $flash = is_array($viewData['flash'] ?? null) ? $viewData['flash'] : null; ?>
+<header class="site-header"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true">N3</span><span>N3</span></a><nav aria-label="Administration"><a href="/admin/pages">Pages</a><a href="/admin/site">Site</a><a href="/account">Account</a></nav></header>
+<main class="admin-page blog-admin" id="main-content">
+    <div class="admin-heading"><div><p class="eyebrow">Blog module</p><h1>Blog posts</h1><p>Draft, preview, and publish plain-text posts.</p></div><a class="button" href="/admin/blog/create">Create post</a></div>
+    <?php if ($flash !== null): ?><div class="alert alert-<?= $escape($flash['type']) ?>" role="status" tabindex="-1"><?= $escape($flash['message']) ?></div><?php endif; ?>
+    <?php if ($posts === []): ?><section class="empty-state" aria-labelledby="blog-empty"><h2 id="blog-empty">No Blog posts yet</h2><p>Create the first draft to begin publishing.</p></section>
+    <?php else: ?><div class="page-list"><?php foreach ($posts as $post): if (!$post instanceof BlogPost) { continue; } ?><article class="page-list-item"><div><span class="status-badge status-<?= $escape($post->status) ?>"><?= $escape(ucfirst($post->status)) ?></span><h2><a href="/admin/blog/<?= $escape($post->id) ?>/edit"><?= $escape($post->title) ?></a></h2><p>/blog/<?= $escape($post->slug) ?></p></div><div class="page-list-actions"><a href="/admin/blog/<?= $escape($post->id) ?>/preview">Preview</a><a href="/admin/blog/<?= $escape($post->id) ?>/edit">Manage</a></div></article><?php endforeach; ?></div><?php endif; ?>
+</main>

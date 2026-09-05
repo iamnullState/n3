@@ -8,12 +8,15 @@ use N3\Core\Config\Environment;
 
 final readonly class DatabaseConfig
 {
+    public TableNames $tableNames;
+
     public function __construct(
         public string $host,
         public int $port,
         public string $database,
         public string $username,
         private string $password,
+        string $tablePrefix = '',
     ) {
         if (!$this->isValidHost($host)) {
             throw new DatabaseException('DB_HOST must be a valid hostname or IP address.');
@@ -34,6 +37,8 @@ final readonly class DatabaseConfig
         if ($password === '') {
             throw new DatabaseException('DB_PASSWORD must not be empty.');
         }
+
+        $this->tableNames = new TableNames($tablePrefix);
     }
 
     public static function fromEnvironment(): self
@@ -44,6 +49,11 @@ final readonly class DatabaseConfig
     public static function fromMigrationEnvironment(): self
     {
         return self::fromCredentialKeys('DB_MIGRATION_USER', 'DB_MIGRATION_PASSWORD');
+    }
+
+    public static function fromBackupEnvironment(): self
+    {
+        return self::fromCredentialKeys('DB_BACKUP_USER', 'DB_BACKUP_PASSWORD');
     }
 
     private static function fromCredentialKeys(string $userKey, string $passwordKey): self
@@ -64,6 +74,7 @@ final readonly class DatabaseConfig
             database: Environment::string('DB_NAME', 'n3'),
             username: Environment::string($userKey),
             password: Environment::string($passwordKey),
+            tablePrefix: Environment::string('DB_TABLE_PREFIX', ''),
         );
     }
 

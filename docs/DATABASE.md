@@ -1,5 +1,8 @@
 # Database Foundation
 
+![Status implemented](https://img.shields.io/badge/status-implemented-2EA44F)
+![MariaDB 11.8 and 12.3](https://img.shields.io/badge/MariaDB-11.8_%7C_12.3-003545?logo=mariadb&logoColor=white)
+
 N3 uses PDO with MariaDB. The database layer is deliberately smaller than an ORM: validated connection configuration, real prepared statements, explicit transactions, ordered/checksummed migrations, and repository interfaces.
 
 See [DATABASE_SECURITY.md](DATABASE_SECURITY.md) for the credential model, threat boundaries, production gates, incident guidance, and automated security-control coverage.
@@ -22,6 +25,7 @@ MariaDB 11.8.9 and 12.3.2 are verified through the Docker test environment. The 
 | `DB_HOST` | No | Defaults to `127.0.0.1`; validated as an IP address or hostname. |
 | `DB_PORT` | No | Defaults to `3306`; must be 1–65535. |
 | `DB_NAME` | No | Defaults to `n3`; letters, numbers, and underscores only. |
+| `DB_TABLE_PREFIX` | No | Defaults to empty. Otherwise 2–24 lowercase ASCII characters, beginning with a letter and ending in `_`; immutable after schema creation. |
 | `DB_USER` | Yes | Runtime account; should have data privileges but no schema-changing privileges. |
 | `DB_PASSWORD` | Yes | Must be supplied through the deployment environment and must not be logged or committed. |
 | `DB_MIGRATION_USER` | Yes | Separate schema-change account used only by the migration CLI. |
@@ -31,11 +35,11 @@ N3 does not load `.env` files. `.env.example` documents keys without being a sec
 
 ## Docker test environment
 
-The local Docker environment is disposable test infrastructure, not a production deployment definition. It binds MariaDB only to `127.0.0.1:3307`, keeps data in a named volume, and creates separate runtime and migration accounts during first initialization. The PHP test container receives only test account credentials and mounts only the files needed by the suite; it cannot read the root password or `.env.docker`.
+The local Docker environment is disposable test infrastructure, not a production deployment definition. It binds MariaDB only to `127.0.0.1:3307`, keeps data in a named volume, and creates separate runtime, migration, and read-only backup accounts during first initialization. The PHP test container receives only test account credentials and mounts only the files needed by the suite; it cannot read the root password or `.env.docker`.
 
 ```bash
 cp .env.docker.example .env.docker
-# Replace all three example passwords before starting the service.
+# Replace every example password before starting the service.
 docker compose --env-file .env.docker up -d --wait mariadb
 docker compose --env-file .env.docker --profile test build php-test
 docker compose --env-file .env.docker --profile test run --rm php-test
@@ -87,7 +91,9 @@ Phase 7B adds a Media-owned one-row-per-Page attachment table with foreign keys 
 
 Phase 8 adds one `site_settings` singleton, ordered `site_navigation_items` Page references, and sanitized `site_events`. Settings and navigation updates use an optimistic lock and one transaction. Scaffold installation requires an existing active, verified administrator and is idempotent by unique Page slug, singleton ID, and unique navigation Page reference. See [SITE.md](SITE.md).
 
-Public registration must never accept `account_status` or `role_key` from the request. `PdoUserRepository::createPending()` fixes these values to `pending_verification` and `member`.
+Phase 9's optional Blog module owns deterministic prefixed `posts` and `events` tables. Posts use a unique binary-collated canonical slug, fixed draft/published lifecycle, author/editor foreign keys, publication-state checks, and optimistic lock version. Event rows use controlled lifecycle fields and omit post content, slugs, profiles, payloads, network identifiers, and tokens. See [BLOG.md](BLOG.md).
+
+Public registration must never accept `account_status` or `role_key` from the request. `PdoUserRepository::createPending()` fixes these values to `pending_verification` and `member`; when the trusted local/test-only verification bypass is enabled, the registration service activates that newly created member in the same transaction without accepting authority or status from the browser.
 
 ## Database accounts
 
@@ -111,4 +117,8 @@ Unit tests validate configuration and migration definitions without a database. 
 
 Integration tests must never target staging or production data.
 
-Observed after Phase 8 on 2026-09-02 with PHP 8.5.9: MariaDB 11.8.9 passed 216 tests and 917 assertions with one expected driver-presence skip; MariaDB 12.3.2 passed 216 tests and 871 assertions with seven version-conditioned skips. Coverage includes fresh/repeated/partial scaffold installation, forced transaction rollback, settings/navigation persistence, audit events, public filtering, and runtime schema-privilege denial.
+Phase 10A routes every managed Core/module table, index, and named constraint through an exact allowlisted identifier mapper on both runtime and migration PDO connections. SQL values and unmanaged identifiers are never rewritten. Prefixless installations remain byte-for-byte compatible; migration `202609020009_create_installation_state` records the chosen prefix, and later connection attempts fail closed if `DB_TABLE_PREFIX` changes. Historical migration files and their recorded SHA-256 checksums remain unchanged.
+
+Phase 10B migration `202609020010_extend_installation_state` adds resumable `pending_admin`/`complete` state. Existing installations that already contain an administrator are marked complete during the forward migration. Fresh browser installs remain pending until one active verified administrator exists and completion is recorded. Browser installation uses migration credentials only inside the isolated installer; normal application composition continues to use the runtime account.
+
+Observed after Phase 10A on 2026-09-02 with PHP 8.5.9: MariaDB 11.8.9 passed 243 tests and 1,099 assertions with one expected driver-presence skip; MariaDB 12.3.2 passed 243 tests and 1,053 assertions with seven version-conditioned skips. Coverage includes fresh prefixed Core/module installation, repeated migration idempotence, repository access, identifier collision isolation, immutable-prefix refusal, prefixless compatibility, and all earlier persistence/security contracts.

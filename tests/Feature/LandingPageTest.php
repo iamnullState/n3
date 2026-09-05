@@ -29,7 +29,10 @@ final class LandingPageTest extends TestCase
         $response = $this->application->handle(Request::create('GET', '/'));
 
         self::assertSame(200, $response->status());
-        self::assertStringContainsString('Hello,', $response->body());
+        self::assertStringContainsString('<span class="greeting-word greeting-hello">Hello,</span>', $response->body());
+        self::assertStringContainsString('<span class="greeting-word greeting-world">world</span>', $response->body());
+        self::assertStringNotContainsString('N3', $response->body());
+        self::assertStringNotContainsString('White-label CMS framework', $response->body());
         self::assertStringContainsString('Content-Security-Policy', implode(' ', array_keys($response->headers())));
         self::assertArrayHasKey('X-Request-ID', $response->headers());
     }

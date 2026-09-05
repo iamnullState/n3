@@ -28,6 +28,10 @@ final class RequestMetricClassifier
             return 'public.site';
         }
 
+        if ($path === '/blog' || str_starts_with($path, '/blog/')) {
+            return 'public.blog';
+        }
+
         if ($path === '/register'
             || $path === '/login'
             || $path === '/logout'
@@ -53,6 +57,10 @@ final class RequestMetricClassifier
 
         if ($path === '/admin/site') {
             return 'admin.site';
+        }
+
+        if ($path === '/admin/blog' || str_starts_with($path, '/admin/blog/')) {
+            return 'admin.blog';
         }
 
         if ($path === '/api/v1/system/ping') {

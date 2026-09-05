@@ -18,6 +18,7 @@ final readonly class IdentityConfig
         public int $sessionIdleTtl = 1800,
         public int $sessionAbsoluteTtl = 43200,
         public string $mailDriver = 'local_outbox',
+        public bool $emailVerificationRequired = true,
     ) {
         if (!preg_match('#^https?://[^/]+$#', $appUrl)) {
             throw new RuntimeException('APP_URL must be an absolute URL without a trailing slash.');
@@ -39,6 +40,11 @@ final readonly class IdentityConfig
     {
         $enabled = Environment::boolean('REGISTRATION_ENABLED', false);
         $driver = Environment::string('IDENTITY_MAIL_DRIVER', 'local_outbox');
+        $verificationRequired = Environment::boolean('EMAIL_VERIFICATION_REQUIRED', true);
+
+        if (!$verificationRequired && $environment === 'production') {
+            throw new RuntimeException('EMAIL_VERIFICATION_REQUIRED may be disabled only in local or test environments.');
+        }
 
         if ($enabled && $environment === 'production' && $driver === 'local_outbox') {
             throw new RuntimeException('Production registration requires a production mail adapter.');
@@ -53,6 +59,7 @@ final readonly class IdentityConfig
             self::integer('SESSION_IDLE_TTL', 1800),
             self::integer('SESSION_ABSOLUTE_TTL', 43200),
             $driver,
+            $verificationRequired,
         );
     }
 

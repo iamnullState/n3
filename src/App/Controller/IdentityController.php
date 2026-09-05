@@ -62,7 +62,9 @@ final readonly class IdentityController
 
         $message = $outcome->rateLimited
             ? 'Too many attempts. Wait before trying again.'
-            : 'If the address can be registered, a verification message is ready.';
+            : ($this->config->emailVerificationRequired
+                ? 'If the address can be registered, a verification message is ready.'
+                : 'If the address can be registered, the account is ready to sign in.');
         $this->flash->set($outcome->rateLimited ? 'warning' : 'success', $message);
 
         return Response::redirect('/register');
@@ -137,6 +139,7 @@ final readonly class IdentityController
             'pageTitle' => 'Create an account — N3',
             'metaDescription' => 'Create and verify your N3 member account.',
             'registrationEnabled' => $this->config->registrationEnabled,
+            'emailVerificationRequired' => $this->config->emailVerificationRequired,
             'csrf' => $this->csrf->token('register'),
             'errors' => $errors,
             'old' => $old,

@@ -1,5 +1,8 @@
 # Aggregate Analytics
 
+![Status optional module](https://img.shields.io/badge/status-optional_module-2457D6)
+![Default disabled](https://img.shields.io/badge/default-disabled-lightgrey)
+
 Phase 6A is N3's first functional optional module. It measures aggregate application request outcomes without tracking visitors.
 
 Phase 6B adds a private server-rendered dashboard and development vitals over the same aggregate boundary.
@@ -9,7 +12,7 @@ Phase 6B adds a private server-rendered dashboard and development vitals over th
 Analytics is disabled by default. When `ANALYTICS_ENABLED=true`, Core classifies each completed request before it reaches the module. The module receives only:
 
 - a UTC occurrence time;
-- one controlled route category: `public.home`, `public.page`, `public.media`, `public.site`, `identity`, `admin.pages`, `admin.analytics`, `admin.media`, `admin.site`, `api.system`, `api.other`, or `other`;
+- one controlled route category: `public.home`, `public.page`, `public.media`, `public.site`, `public.blog`, `identity`, `admin.pages`, `admin.analytics`, `admin.media`, `admin.site`, `admin.blog`, `api.system`, `api.other`, or `other`;
 - the normalized HTTP method and response status;
 - bounded request duration in microseconds.
 

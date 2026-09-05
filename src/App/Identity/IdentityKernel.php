@@ -13,9 +13,27 @@ use N3\Core\Session\FlashBag;
 use N3\Core\Session\NativeSessionStore;
 use N3\Core\View\View;
 use N3\Core\Security\CurrentPrincipalProvider;
+use N3\Core\Security\CurrentActorProvider;
 
 final class IdentityKernel
 {
+    public static function actorProvider(string $root, string $environment): CurrentActorProvider
+    {
+        $database = require $root . '/config/database.php';
+        $connection = (new ConnectionFactory())->create($database);
+        $config = IdentityConfig::fromEnvironment($environment);
+        $session = new NativeSessionStore($root . '/storage/sessions', $environment === 'production');
+        $csrf = new CsrfTokenManager($session);
+
+        return new IdentityActorProvider(new AuthSessionManager(
+            $session,
+            $csrf,
+            new PdoUserRepository($connection),
+            $config->sessionIdleTtl,
+            $config->sessionAbsoluteTtl,
+        ));
+    }
+
     public static function principalProvider(string $root, string $environment): CurrentPrincipalProvider
     {
         $database = require $root . '/config/database.php';

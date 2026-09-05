@@ -273,7 +273,7 @@ final class ModuleMigrationRunnerTest extends TestCase
     public function testConcurrentMigrationProcessFailsWithoutApplyingDdl(): void
     {
         $database = (string) $this->migrationConnection->query('SELECT DATABASE()')->fetchColumn();
-        $lock = 'n3:module-migrations:' . substr(hash('sha256', $database), 0, 32);
+        $lock = 'n3:module-migrations:' . substr(hash('sha256', $database . "\0"), 0, 32);
         $lockStatement = $this->migrationConnection->prepare('SELECT GET_LOCK(:name, 0)');
         $lockStatement->execute(['name' => $lock]);
         self::assertSame(1, (int) $lockStatement->fetchColumn());

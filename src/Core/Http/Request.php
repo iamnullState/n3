@@ -98,6 +98,14 @@ final readonly class Request
         return filter_var($ip, FILTER_VALIDATE_IP) === false ? '0.0.0.0' : $ip;
     }
 
+    public function isSecure(): bool
+    {
+        $https = strtolower((string) ($this->server['HTTPS'] ?? ''));
+
+        return in_array($https, ['1', 'on'], true)
+            || (string) ($this->server['SERVER_PORT'] ?? '') === '443';
+    }
+
     public function header(string $name, ?string $default = null): ?string
     {
         $key = strtoupper(str_replace('-', '_', trim($name)));

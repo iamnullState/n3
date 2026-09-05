@@ -115,10 +115,11 @@ final readonly class MigrationRunner
 
     private function repositoryExists(): bool
     {
-        $statement = $this->connection->query(
+        $statement = $this->connection->prepare(
             "SELECT COUNT(*) FROM information_schema.tables "
-            . "WHERE table_schema = DATABASE() AND table_name = 'schema_migrations'",
+            . 'WHERE table_schema = DATABASE() AND table_name = :table_name',
         );
+        $statement->execute(['table_name' => $this->tableName('schema_migrations')]);
 
         if ($statement === false) {
             throw new RuntimeException('Unable to inspect migration state.');
@@ -212,5 +213,12 @@ final readonly class MigrationRunner
         $value = $this->connection->query('SELECT MAX(batch) FROM schema_migrations')?->fetchColumn();
 
         return $value === false || $value === null ? null : (int) $value;
+    }
+
+    private function tableName(string $logical): string
+    {
+        return $this->connection instanceof TablePrefixedPdo
+            ? $this->connection->tableNames()->physical($logical)
+            : $logical;
     }
 }

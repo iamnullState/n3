@@ -70,7 +70,7 @@ final readonly class Application
                 : $this->errorResponse('errors/500', 'Something went wrong', 500);
         }
 
-        $response = $this->secure($response, $requestId);
+        $response = $this->secure($response, $requestId, $request);
         $this->recordRequestMetric($request, $response, $startedAt);
 
         return $response;
@@ -127,9 +127,9 @@ final readonly class Application
         }
     }
 
-    private function secure(Response $response, string $requestId): Response
+    private function secure(Response $response, string $requestId, Request $request): Response
     {
-        return $response
+        $response = $response
             ->withHeader('X-Request-ID', $requestId)
             ->withHeader('X-Content-Type-Options', 'nosniff')
             ->withHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
@@ -139,5 +139,9 @@ final readonly class Application
                 "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
                 . "object-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'",
             );
+
+        return $this->environment === 'production' && $request->isSecure()
+            ? $response->withHeader('Strict-Transport-Security', 'max-age=31536000')
+            : $response;
     }
 }

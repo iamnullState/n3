@@ -8,6 +8,7 @@ use N3\App\Identity\IdentityKernel;
 use N3\App\Content\ContentKernel;
 use N3\App\Content\PageMediaProvider;
 use N3\Core\Application;
+use N3\Core\Deployment\ProductionGuard;
 use N3\Core\Http\Router;
 use N3\Core\Logging\FileLogger;
 use N3\Core\Event\EventDispatcher;
@@ -16,16 +17,20 @@ use N3\Core\Module\ModuleLifecycleFailed;
 use N3\Core\Observability\RequestMetricsSink;
 use N3\Core\Security\CurrentPrincipalProvider;
 use N3\Core\Security\LazyCurrentPrincipalProvider;
+use N3\Core\Security\CurrentActorProvider;
+use N3\Core\Security\LazyCurrentActorProvider;
 use N3\Core\Event\EventListenerFailed;
 use N3\Core\Service\ServiceRegistry;
 use N3\Core\View\View;
 
 $root = dirname(__DIR__);
 
-require $root . '/vendor/autoload.php';
+require_once $root . '/vendor/autoload.php';
 
 /** @var array{name: string, version: string, environment: string, debug: bool, timezone: string} $config */
 $config = require $root . '/config/app.php';
+
+ProductionGuard::assertWebReady($root, $config);
 
 date_default_timezone_set($config['timezone']);
 ini_set('display_errors', '0');
@@ -111,6 +116,12 @@ $services->register(View::class, $view);
 $services->register(FileLogger::class, $logger);
 $services->register(CurrentPrincipalProvider::class, new LazyCurrentPrincipalProvider(
     static fn (): CurrentPrincipalProvider => IdentityKernel::principalProvider(
+        $root,
+        $config['environment'],
+    ),
+));
+$services->register(CurrentActorProvider::class, new LazyCurrentActorProvider(
+    static fn (): CurrentActorProvider => IdentityKernel::actorProvider(
         $root,
         $config['environment'],
     ),
